@@ -2,8 +2,8 @@
 import { itEach } from 'mocha-it-each';
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/signers";
-import {BigNumber} from "ethers";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { BigNumber } from "ethers";
 
 describe('Lottery', function () {
     this.timeout(60000);
@@ -33,8 +33,8 @@ describe('Lottery', function () {
         }
     }
 
-    async function _setChance(min:number, max:number=0) {
-        await (await lottery.setChance(min, max || min)).wait();
+    async function _setTestChance(value:number) {
+        await (await lottery.setTestChance(value, value)).wait();
     }
 
     function _attempt(wait?: boolean, value?: number, user?: SignerWithAddress) {
@@ -72,7 +72,7 @@ describe('Lottery', function () {
         signers = await ethers.getSigners();
         owner = signers.shift() as SignerWithAddress;
 
-        const Lottery = await ethers.getContractFactory('Lottery');
+        const Lottery = await ethers.getContractFactory('LotteryTest');
         lottery = await Lottery.deploy();
         await lottery.deployed()
     })
@@ -116,8 +116,19 @@ describe('Lottery', function () {
             .to.emit(lottery, 'ChangedRates')
             .withArgs(50, 70);
 
+        expect(await lottery.winRate()).to.eq(90);
+        expect(await lottery.feeRate()).to.eq(90);
+        expect(await lottery.newWinRate()).to.eq(50);
+        expect(await lottery.newFeeRate()).to.eq(70);
+
+        await _addBalance(true);
+        await _setTestChance(1000);
+        await _attempt(true);
+
         expect(await lottery.winRate()).to.eq(50);
         expect(await lottery.feeRate()).to.eq(70);
+        expect(await lottery.newWinRate()).to.eq(0);
+        expect(await lottery.newFeeRate()).to.eq(0);
     })
 
     it('[ok] setChance', async function() {
@@ -127,8 +138,19 @@ describe('Lottery', function () {
             .to.emit(lottery, 'ChangedChance')
             .withArgs(10, 200);
 
+        expect(await lottery.minChance()).to.eq(1);
+        expect(await lottery.maxChance()).to.eq(100);
+        expect(await lottery.newMinChance()).to.eq(10);
+        expect(await lottery.newMaxChance()).to.eq(200);
+
+        await _addBalance(true);
+        await _setTestChance(1000);
+        await _attempt(true);
+
         expect(await lottery.minChance()).to.eq(10);
         expect(await lottery.maxChance()).to.eq(200);
+        expect(await lottery.newMinChance()).to.eq(0);
+        expect(await lottery.newMaxChance()).to.eq(0);
     })
 
     it('[ok] attempt', async function() {
@@ -175,13 +197,13 @@ describe('Lottery', function () {
 
     it('[ok] stopped', async function() {
         await _addBalance(true);
-        await _setChance(0);
+        await _setTestChance(0);
         await _attempt(true, 100);
         await _attempt(true, 200);
 
         await (await lottery.setStop(true)).wait();
 
-        await _setChance(1000);
+        await _setTestChance(1000);
 
         await expect(
             _attempt(false, 300)
@@ -202,11 +224,11 @@ describe('Lottery', function () {
         const addValue1 = 1000;
         await _addBalance(true);
 
-        await _setChance(0)
+        await _setTestChance(0)
         const addValue2 = 2000;
         await _attempt(true, addValue2);
 
-        await _setChance(1000)
+        await _setTestChance(1000)
 
         const attemptValue = 500;
         const winRate = await lottery.winRate();
@@ -232,7 +254,7 @@ describe('Lottery', function () {
         expect(await lottery.getBalance()).to.eq(remainderValue);
     })
 
-    itEach.only('[ok] admin win [${value}]', [1, 2, 3, 4, 5], async function(value: any) {
+    itEach('[ok] admin win [${value}]', [1, 2, 3, 4, 5], async function(value: any) {
         totalWin = BigNumber.from(0);
         const addStart = BigNumber.from(''+Math.floor(0.01 * (10**18)));
         await _addBalance(true, addStart);
@@ -243,17 +265,12 @@ describe('Lottery', function () {
         const maxCount = 1000;
         for (let i=0; i<maxCount; i++) {
             if (i === maxCount - 1) {
-                await _setChance(1000);
+                await _setTestChance(1000);
             }
             winner = await attemptRandom();
         }
         const finishBalance = await owner.getBalance();
         const adminWin = finishBalance.sub(startBalance);
-        console.log(
-            'wins',
-            ethers.utils.formatEther(adminWin),
-            ethers.utils.formatEther(totalWin)
-        );
         expect(adminWin).to.gt(ethers.utils.parseEther('0.04'));
     })
 

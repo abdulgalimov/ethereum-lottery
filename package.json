@@ -1,5 +1,6 @@
 {
   "scripts": {
+    "build:events": "tsc scripts/events.ts --outDir dist --module esnext",
     "deploy:localhost": "npx hardhat run scripts/deploy.ts --network localhost",
     "deploy:goerli": "npx hardhat run scripts/deploy.ts --network goerli",
     "deploy:mainnet": "npx hardhat run scripts/deploy.ts --network mainnet",

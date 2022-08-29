@@ -13,3 +13,5 @@ artifacts
 data
 .DS_Store
 .idea
+dist
+temp

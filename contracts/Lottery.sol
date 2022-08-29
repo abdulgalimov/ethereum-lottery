@@ -14,13 +14,19 @@ contract Lottery {
     uint public maxChance = 100;
     uint public winRate = 90;
     uint public feeRate = 90;
+
+    uint public newMinChance = 0;
+    uint public newMaxChance = 0;
+    uint public newWinRate = 0;
+    uint public newFeeRate = 0;
+
     constructor() {
         owner = payable(msg.sender);
     }
 
+    event Add(uint addAmount);
     event Try(uint tryAmount, uint count);
     event Win(uint winAmount, uint count);
-    event Add(uint addAmount);
     event ChangedRates(uint winRate, uint feeRate);
     event ChangedChance(uint minChance, uint maxChance);
 
@@ -30,19 +36,20 @@ contract Lottery {
     }
 
     function addBalance() external payable onlyOwner {
+        require(msg.value > 0, "zero value");
         emit Add(msg.value);
     }
 
     function setRates(uint _winRate, uint _feeRate) external onlyOwner {
-        winRate = _winRate;
-        feeRate = _feeRate;
-        emit ChangedRates(winRate, feeRate);
+        newWinRate = _winRate;
+        newFeeRate = _feeRate;
+        emit ChangedRates(_winRate, _feeRate);
     }
 
     function setChance(uint _minChance, uint _maxChance) external onlyOwner {
-        minChance = _minChance;
-        maxChance = _maxChance;
-        emit ChangedChance(minChance, maxChance);
+        newMinChance = _minChance;
+        newMaxChance = _maxChance;
+        emit ChangedChance(_minChance, _maxChance);
     }
 
     function setStop(bool _stopped) external onlyOwner {
@@ -86,21 +93,39 @@ contract Lottery {
         emit Try(msg.value, totalCount);
 
         if (rnd <= chance) {
-            uint winAmount = (totalBalance * winRate) / 100;
-            uint feeValue = totalBalance - winAmount;
+            win(totalBalance);
+        }
+    }
 
-            if (stopped) {
-                owner.transfer(feeValue);
-            } else {
-                owner.transfer((feeValue * feeRate) / 100);
-            }
+    function win(uint totalBalance) internal {
+        uint winAmount = (totalBalance * winRate) / 100;
+        uint feeValue = totalBalance - winAmount;
 
-            emit Win(winAmount, totalCount);
+        if (stopped) {
+            owner.transfer(feeValue);
+        } else {
+            owner.transfer((feeValue * feeRate) / 100);
+        }
 
-            address payable winner = payable(msg.sender);
-            winner.transfer(winAmount);
+        emit Win(winAmount, totalCount);
 
-            totalCount = 0;
+        address payable winner = payable(msg.sender);
+        winner.transfer(winAmount);
+
+        totalCount = 0;
+
+        if (newMinChance > 0) {
+            minChance = newMinChance;
+            maxChance = newMaxChance;
+            newMinChance = 0;
+            newMaxChance = 0;
+        }
+
+        if (newFeeRate > 0) {
+            feeRate = newFeeRate;
+            winRate = newWinRate;
+            newFeeRate = 0;
+            newWinRate = 0;
         }
     }
 }
