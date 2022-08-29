@@ -1,10 +1,10 @@
 {
   "scripts": {
-    "build:events": "tsc scripts/events.ts --outDir dist --module esnext",
+    "build:events": "tsc --project app/tsconfig.json",
     "deploy:localhost": "npx hardhat run scripts/deploy.ts --network localhost",
     "deploy:goerli": "npx hardhat run scripts/deploy.ts --network goerli",
     "deploy:mainnet": "npx hardhat run scripts/deploy.ts --network mainnet",
-    "events": "npx ts-node scripts/events.ts"
+    "dev:events": "npm run build:events && NETWORK=localhost node dist/events.js"
   },
   "name": "hardhat-project",
   "devDependencies": {

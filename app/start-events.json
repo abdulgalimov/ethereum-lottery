@@ -7,7 +7,6 @@
   "log_date_format": "YYYY-MM-DD HH:mm:ss:SSS Z",
   "max_memory_restart" : "4000M",
   "env": {
-    "NETWORK": "localhost",
-    "NODE_PATH": ".:./api/"
+    "NETWORK": "localhost"
   }
 }

@@ -1,7 +1,7 @@
 import { ethers } from "hardhat";
 import fs from 'fs';
 import path from 'path';
-import networks from './networks';
+import networks from '../app/networks';
 
 const dataDir = 'data';
 if (!fs.existsSync(dataDir)) {

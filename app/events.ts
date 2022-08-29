@@ -2,7 +2,7 @@ import Web3 from 'web3';
 import networks from './networks';
 
 function main() {
-    console.log('[start events]');
+    console.log('[start dev:events]');
     const {npm_config_network, NETWORK} = process.env;
     const { providerUrl, filename } = networks(npm_config_network || NETWORK);
 
