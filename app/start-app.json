@@ -1,6 +1,6 @@
 {
-  "script": "dist/events.js",
-  "name": "LotteryEvents",
+  "script": "dist/app.js",
+  "name": "LotteryApp",
   "ignore_watch": ["temp"],
   "out_file": "./temp/logs/out.txt",
   "error_file": "./temp/logs/error.txt",

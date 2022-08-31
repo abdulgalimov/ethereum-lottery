@@ -25,7 +25,7 @@ contract Lottery {
     }
 
     event Add(uint addAmount);
-    event Try(uint tryAmount, uint count);
+    event Try(uint tryAmount, uint count, uint totalAmount);
     event Win(uint winAmount, uint count);
     event ChangedRates(uint winRate, uint feeRate);
     event ChangedChance(uint minChance, uint maxChance);
@@ -90,42 +90,38 @@ contract Lottery {
         totalBalance += msg.value;
 
         uint rnd = random();
-        emit Try(msg.value, totalCount);
+        emit Try(msg.value, totalCount, totalBalance);
 
         if (rnd <= chance) {
-            win(totalBalance);
-        }
-    }
+            uint winAmount = (totalBalance * winRate) / 100;
+            uint feeValue = totalBalance - winAmount;
 
-    function win(uint totalBalance) internal {
-        uint winAmount = (totalBalance * winRate) / 100;
-        uint feeValue = totalBalance - winAmount;
+            if (stopped) {
+                owner.transfer(feeValue);
+            } else {
+                owner.transfer((feeValue * feeRate) / 100);
+            }
 
-        if (stopped) {
-            owner.transfer(feeValue);
-        } else {
-            owner.transfer((feeValue * feeRate) / 100);
-        }
+            emit Win(winAmount, totalCount);
 
-        emit Win(winAmount, totalCount);
+            address payable winner = payable(msg.sender);
+            winner.transfer(winAmount);
 
-        address payable winner = payable(msg.sender);
-        winner.transfer(winAmount);
+            totalCount = 0;
 
-        totalCount = 0;
+            if (newMinChance > 0) {
+                minChance = newMinChance;
+                maxChance = newMaxChance;
+                newMinChance = 0;
+                newMaxChance = 0;
+            }
 
-        if (newMinChance > 0) {
-            minChance = newMinChance;
-            maxChance = newMaxChance;
-            newMinChance = 0;
-            newMaxChance = 0;
-        }
-
-        if (newFeeRate > 0) {
-            feeRate = newFeeRate;
-            winRate = newWinRate;
-            newFeeRate = 0;
-            newWinRate = 0;
+            if (newFeeRate > 0) {
+                feeRate = newFeeRate;
+                winRate = newWinRate;
+                newFeeRate = 0;
+                newWinRate = 0;
+            }
         }
     }
 }

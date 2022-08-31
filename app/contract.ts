@@ -1,10 +1,10 @@
 import Web3 from 'web3';
-import networks from './networks';
+import {NetworkInfo} from "./networks";
 
-function main() {
-    console.log('[start dev:events]');
-    const {npm_config_network, NETWORK} = process.env;
-    const { providerUrl, filename } = networks(npm_config_network || NETWORK);
+type Callback = (name: string, ...args: any[]) => {};
+
+export async function init(network: NetworkInfo, callback: Callback) {
+    const { providerUrl, filename } = network;
 
     const web3 = new Web3(providerUrl);
     const LotteryArtifacts = require('../artifacts/contracts/Lottery.sol/Lottery.json')
@@ -17,19 +17,19 @@ function main() {
     lotteryContract.events.Add()
         .on('data', async function (event: any) {
             const {addAmount} = event.returnValues;
-            console.log('[add]', addAmount);
+            callback('add', addAmount);
         });
 
     lotteryContract.events.Try()
         .on('data', async function (event: any) {
-            const {tryAmount, count} = event.returnValues;
-            console.log('[try]', tryAmount, count);
+            const {tryAmount, count, totalAmount} = event.returnValues;
+            callback('try', tryAmount, count, totalAmount, event.transactionHash);
         });
 
     lotteryContract.events.Win()
         .on('data', async function (event: any) {
             const {winAmount, count} = event.returnValues;
-            console.log('[win]', winAmount, count);
+            callback('win', winAmount, count, event.transactionHash);
         })
 
     lotteryContract.events.ChangedRates()
@@ -43,7 +43,4 @@ function main() {
             const {minChance, maxChance} = event.returnValues;
             console.log('[change chance]', minChance, maxChance);
         })
-
 }
-
-main();

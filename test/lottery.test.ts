@@ -163,7 +163,7 @@ describe('Lottery', function () {
             }),
         )
             .to.emit(lottery, 'Try')
-            .withArgs(100, 1);
+            .withArgs(100, 1, 1100);
         expect(await lottery.totalCount()).to.eq(1);
         expect(await lottery.getBalance()).to.eq(1100);
     })
