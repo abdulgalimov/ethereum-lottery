@@ -5,6 +5,46 @@ import { ethers } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber } from "ethers";
 
+interface Settings {
+    randomValue: number;
+    minChance: number;
+    maxChance: number;
+    winRate: number;
+    feeRate: number;
+}
+interface UpdateSettings {
+    randomValue?: number;
+    minChance?: number;
+    maxChance?: number;
+    winRate?: number;
+    feeRate?: number;
+}
+
+const defaultSettings: Settings = {
+    randomValue: 1000,
+    minChance: 1,
+    maxChance: 100,
+    winRate: 90,
+    feeRate: 90,
+}
+const emptySettings: Settings = {
+    randomValue: 0,
+    minChance: 0,
+    maxChance: 0,
+    winRate: 0,
+    feeRate: 0,
+}
+type SettingsKey = keyof Settings;
+
+function createSettings(newValue?: UpdateSettings): Settings {
+    const settings: any = {};
+    Object.entries(defaultSettings).map(([k, value]) => {
+        const key = k as SettingsKey;
+        settings[key] = newValue && key in newValue ? newValue[key] : value;
+    })
+    return settings as Settings;
+}
+
 describe('Lottery', function () {
     this.timeout(60000);
 
@@ -17,6 +57,17 @@ describe('Lottery', function () {
     function getUser(): SignerWithAddress {
         const index = Math.floor(Math.random() * signers.length);
         return signers[index];
+    }
+
+    async function _getSettings(getNew?:boolean): Promise<Settings> {
+        const settings = getNew ? (await lottery.newSettings()) : (await lottery.settings());
+        return {
+            randomValue: settings.randomValue.toNumber(),
+            minChance: settings.minChance.toNumber(),
+            maxChance: settings.maxChance.toNumber(),
+            winRate: settings.winRate.toNumber(),
+            feeRate: settings.feeRate.toNumber(),
+        }
     }
 
     function _addBalance(wait?:boolean, value?: BigNumber, otherUser?: boolean) {
@@ -33,8 +84,13 @@ describe('Lottery', function () {
         }
     }
 
-    async function _setTestChance(value:number) {
-        await (await lottery.setTestChance(value, value)).wait();
+    async function _setTestSettings(update: UpdateSettings) {
+        const settings = createSettings(update);
+        await (await lottery.setTestSettings(settings)).wait();
+    }
+
+    async function _setMaxChance() {
+        await _setTestSettings({minChance: 1000, maxChance: 1001});
     }
 
     function _attempt(wait?: boolean, value?: number, user?: SignerWithAddress) {
@@ -78,18 +134,11 @@ describe('Lottery', function () {
     })
 
     it('[ok] create', async function () {
-        expect(await lottery.owner()).to.eq(owner.address);
-        expect(await lottery.randomValue()).to.eq(1000);
-        expect(await lottery.minChance()).to.eq(1);
-        expect(await lottery.maxChance()).to.eq(100);
-        expect(await lottery.winRate()).to.eq(90);
-        expect(await lottery.feeRate()).to.eq(90);
-        expect(await lottery.newMinChance()).to.eq(0);
-        expect(await lottery.newMaxChance()).to.eq(0);
-        expect(await lottery.newWinRate()).to.eq(0);
-        expect(await lottery.newFeeRate()).to.eq(0);
-        expect(await lottery.totalCount()).to.eq(0);
+        expect(await _getSettings()).to.deep.equal(defaultSettings);
 
+        expect(await _getSettings(true)).to.deep.equal(emptySettings);
+
+        expect(await lottery.totalCount()).to.eq(0);
         expect(await lottery.getBalance()).to.eq(0);
     })
 
@@ -106,6 +155,10 @@ describe('Lottery', function () {
 
     it('[fail] addBalance', async function() {
         await expect(
+            _addBalance(false, BigNumber.from(0))
+        ).to.revertedWith('zero value');
+
+        await expect(
             _addBalance(false, BigNumber.from(1000), true)
         ).to.revertedWith('Owner only');
 
@@ -113,52 +166,33 @@ describe('Lottery', function () {
         expect(await lottery.getBalance()).to.eq(0);
     })
 
-    it('[ok] setRates', async function() {
-        const newWinRate = 50;
-        const newFeeRate = 70;
+    it('[ok] settings', async function() {
+        const newSettings: Settings = createSettings({
+            winRate: 50,
+            feeRate: 70,
+            randomValue: 2000,
+            minChance: 10,
+            maxChance: 200,
+        });
         await expect(
-            lottery.setRates(newWinRate, newFeeRate)
+            lottery.setSettings(newSettings)
         )
-            .to.emit(lottery, 'ChangedRates')
-            .withArgs(newWinRate, newFeeRate);
-
-        expect(await lottery.winRate()).to.eq(90);
-        expect(await lottery.feeRate()).to.eq(90);
-        expect(await lottery.newWinRate()).to.eq(newWinRate);
-        expect(await lottery.newFeeRate()).to.eq(newFeeRate);
+            .to.emit(lottery, 'SettingsChanged');
+        expect(await _getSettings()).to.deep.equal(defaultSettings);
+        expect(await _getSettings(true)).to.deep.equal(newSettings);
 
         await _addBalance(true);
-        await _setTestChance(1000);
-        await _attempt(true);
+        /**
+         * test line:
+         * if (chance > settings.maxChance) {
+         * in sol file
+         */
+        await _attempt(true, 1);
+        await _setMaxChance();
+        await _attempt(true, 1000000);
 
-        expect(await lottery.winRate()).to.eq(newWinRate);
-        expect(await lottery.feeRate()).to.eq(newFeeRate);
-        expect(await lottery.newWinRate()).to.eq(0);
-        expect(await lottery.newFeeRate()).to.eq(0);
-    })
-
-    it('[ok] setChance', async function() {
-        const newMinChance = 10;
-        const newMaxChance = 200;
-        await expect(
-            lottery.setChance(newMinChance, newMaxChance)
-        )
-            .to.emit(lottery, 'ChangedChance')
-            .withArgs(newMinChance, newMaxChance);
-
-        expect(await lottery.minChance()).to.eq(1);
-        expect(await lottery.maxChance()).to.eq(100);
-        expect(await lottery.newMinChance()).to.eq(newMinChance);
-        expect(await lottery.newMaxChance()).to.eq(newMaxChance);
-
-        await _addBalance(true);
-        await _setTestChance(1000);
-        await _attempt(true);
-
-        expect(await lottery.minChance()).to.eq(newMinChance);
-        expect(await lottery.maxChance()).to.eq(newMaxChance);
-        expect(await lottery.newMinChance()).to.eq(0);
-        expect(await lottery.newMaxChance()).to.eq(0);
+        expect(await _getSettings()).to.deep.equal(newSettings);
+        expect(await _getSettings(true)).to.deep.equal(emptySettings);
     })
 
     it('[ok] attempt', async function() {
@@ -207,14 +241,14 @@ describe('Lottery', function () {
 
     it('[ok] stopped', async function() {
         await _addBalance(true);
-        await _setTestChance(0);
+        await _setTestSettings({minChance: 0, maxChance: 0});
         await _attempt(true, 100);
         await _attempt(true, 200);
 
         await (await lottery.setStop(true)).wait();
         expect(await lottery.stopped()).to.eq(true);
 
-        await _setTestChance(1000);
+        await _setMaxChance();
 
         await expect(
             _attempt(false, 300)
@@ -236,15 +270,14 @@ describe('Lottery', function () {
         const addValue1 = 1000;
         await _addBalance(true);
 
-        await _setTestChance(0)
+        await _setTestSettings({minChance: 0, maxChance: 0});
         const addValue2 = 2000;
         await _attempt(true, addValue2);
 
-        await _setTestChance(1000)
+        await _setMaxChance();
 
         const attemptValue = 500;
-        const winRate = await lottery.winRate();
-        const feeRate = await lottery.feeRate();
+        const { winRate, feeRate } = defaultSettings;
 
         const totalValue = addValue1 + addValue2 + attemptValue;
         const winValue = Math.floor(totalValue * winRate / 100);
@@ -277,7 +310,7 @@ describe('Lottery', function () {
         const maxCount = 1000;
         for (let i=0; i<maxCount; i++) {
             if (i === maxCount - 1) {
-                await _setTestChance(1000);
+                await _setMaxChance();
             }
             winner = await attemptRandom();
         }

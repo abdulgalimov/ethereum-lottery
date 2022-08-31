@@ -6,15 +6,14 @@ import "./Lottery.sol";
 
 
 contract LotteryTest is Lottery {
-    function setTestRates(uint _winRate, uint _feeRate) external onlyOwner {
-        winRate = _winRate;
-        feeRate = _feeRate;
-        emit ChangedRates(winRate, feeRate);
-    }
 
-    function setTestChance(uint _minChance, uint _maxChance) external onlyOwner {
-        minChance = _minChance;
-        maxChance = _maxChance;
-        emit ChangedChance(minChance, maxChance);
+    function setTestSettings(Settings calldata updateSettings) external onlyOwner {
+        settings.randomValue = updateSettings.randomValue;
+        settings.winRate = updateSettings.winRate;
+        settings.feeRate = updateSettings.feeRate;
+        settings.minChance = updateSettings.minChance;
+        settings.maxChance = updateSettings.maxChance;
+
+        emit SettingsChanged(newSettings);
     }
 }
