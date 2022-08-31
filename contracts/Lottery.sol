@@ -53,7 +53,7 @@ contract Lottery {
     }
 
     function setStop(bool _stopped) external onlyOwner {
-        stopped = _stopped  ;
+        stopped = _stopped;
     }
 
     function getBalance() public view returns(uint) {

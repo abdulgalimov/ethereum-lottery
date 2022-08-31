@@ -1,4 +1,5 @@
-import {Context, Telegraf, MiddlewareFn} from "telegraf";
+import {Telegraf} from "telegraf";
+import Web3 from 'web3';
 import {NetworkInfo} from "../networks";
 
 const { TELEGRAM_TOKEN, TELEGRAM_CHANNEL_ID } = process.env;
@@ -8,22 +9,6 @@ let bot: Telegraf
 export async function start(_network: NetworkInfo) {
     network = _network;
     bot = new Telegraf(TELEGRAM_TOKEN as string);
-
-    bot.command('start', onStart);
-    bot.command('state', onState);
-
-    await bot.launch();
-}
-
-async function onStart(ctx: Context, next: MiddlewareFn<any>) {
-    await ctx.reply(`
-/state - show current state
-`);
-}
-
-
-async function onState(ctx: Context) {
-    console.log('onState 1');
 }
 
 const tryMessageTemplate = `
@@ -40,14 +25,14 @@ export function notifyEvent(name: string, ...args: any[]) {
     switch (name) {
         case 'try':
             message = tryMessageTemplate
-                .replace('$tryAmount', args[0])
+                .replace('$tryAmount', formatAmount(args[0]))
                 .replace('$count', args[1])
-                .replace('$totalAmount', args[2])
+                .replace('$totalAmount', formatAmount(args[2]))
             blockhash = args[3];
             break;
         case 'win':
             message = winMessageTemplate
-                .replace('$totalAmount', args[0])
+                .replace('$totalAmount', formatAmount(args[0]))
             blockhash = args[1];
             break;
     }
@@ -61,4 +46,8 @@ export function notifyEvent(name: string, ...args: any[]) {
             disable_web_page_preview: true
         });
     }
+}
+
+function formatAmount(amount: any): string {
+    return Web3.utils.fromWei(amount, 'ether') + ' ETH';
 }
