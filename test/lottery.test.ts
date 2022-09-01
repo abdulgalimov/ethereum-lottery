@@ -351,7 +351,7 @@ describe('Lottery', function () {
         expect(await lottery.getBalance()).to.eq(remainderValue);
     })
 
-    itEach.only('[ok] admin win [${value}]', [1], async function(value: any) {
+    itEach.skip('[ok] admin win [${value}]', [1], async function(value: any) {
         totalWin = BigNumber.from(0);
         const addStart = BigNumber.from(''+Math.floor(0.01 * (10**18)));
         await _addBalance(true, addStart);
