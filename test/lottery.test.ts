@@ -11,6 +11,7 @@ interface Settings {
     maxChance: number;
     winRate: number;
     feeRate: number;
+    minRate: number;
 }
 interface UpdateSettings {
     randomValue?: number;
@@ -18,14 +19,17 @@ interface UpdateSettings {
     maxChance?: number;
     winRate?: number;
     feeRate?: number;
+    minRate?: number;
 }
 
+const defaultMinRate: bigint = 10n;
 const defaultSettings: Settings = {
     randomValue: 1000,
     minChance: 1,
     maxChance: 100,
     winRate: 90,
     feeRate: 90,
+    minRate: Number(defaultMinRate),
 }
 const emptySettings: Settings = {
     randomValue: 0,
@@ -33,8 +37,13 @@ const emptySettings: Settings = {
     maxChance: 0,
     winRate: 0,
     feeRate: 0,
+    minRate: 0,
 }
 type SettingsKey = keyof Settings;
+const defaultBalance = 1000;
+function getMinValue(value?: number) {
+    return Math.floor((value||defaultBalance) * defaultSettings.minRate / 100);
+}
 
 function createSettings(newValue?: UpdateSettings): Settings {
     const settings: any = {};
@@ -43,6 +52,28 @@ function createSettings(newValue?: UpdateSettings): Settings {
         settings[key] = newValue && key in newValue ? newValue[key] : value;
     })
     return settings as Settings;
+}
+
+/** Generates BigInts between low (inclusive) and high (exclusive) */
+function generateRandomBigInt(lowBigInt: bigint, highBigInt: bigint) {
+    if (lowBigInt >= highBigInt) {
+        throw new Error('lowBigInt must be smaller than highBigInt');
+    }
+
+    const difference = highBigInt - lowBigInt;
+    const differenceLength = difference.toString().length;
+    let multiplier = '';
+    while (multiplier.length < differenceLength) {
+        multiplier += Math.random()
+            .toString()
+            .split('.')[1];
+    }
+    multiplier = multiplier.slice(0, differenceLength);
+    const divisor = '1' + '0'.repeat(differenceLength);
+
+    const randomDifference = (difference * BigInt(multiplier)) / BigInt(divisor);
+
+    return lowBigInt + randomDifference;
 }
 
 describe('Lottery', function () {
@@ -54,9 +85,11 @@ describe('Lottery', function () {
     let totalWin = BigNumber.from(0);
     let totalSend = BigNumber.from(0);
 
+    let userIndex = 0;
     function getUser(): SignerWithAddress {
-        const index = Math.floor(Math.random() * signers.length);
-        return signers[index];
+        userIndex++;
+        if (userIndex >= signers.length) userIndex = 0;
+        return signers[userIndex];
     }
 
     async function _getSettings(getNew?:boolean): Promise<Settings> {
@@ -67,12 +100,13 @@ describe('Lottery', function () {
             maxChance: settings.maxChance.toNumber(),
             winRate: settings.winRate.toNumber(),
             feeRate: settings.feeRate.toNumber(),
+            minRate: settings.minRate.toNumber(),
         }
     }
 
     function _addBalance(wait?:boolean, value?: BigNumber, otherUser?: boolean) {
         const options = {
-            value: value || 1000
+            value: value || defaultBalance
         };
         const txPromise = otherUser
             ? lottery.connect(getUser()).addBalance(options)
@@ -105,19 +139,33 @@ describe('Lottery', function () {
         }
     }
 
-    async function attemptRandom(): Promise<boolean> {
-        const min = 0.0001;
-        const max = 0.001;
-        const valueEth = min + Math.random()*(max-min);
-        const valueWai = BigNumber.from(Math.floor(valueEth * (10**18)));
+    function formatWei(wei: bigint) {
+        return (ethers.utils.formatEther(wei)+'000000').substring(0, 20);
+    }
+    async function attemptRandom(index: number=0): Promise<boolean> {
+        const balance: bigint = (await lottery.getBalance()).toBigInt();
+        const min: bigint = balance * defaultMinRate / 1000n;
+        const max = min + min / 2n;
+        const valueWai  = generateRandomBigInt(min, max);
+        // const valueWai = min;
+        const beforeBalance = await lottery.getBalance();
         totalSend = totalSend.add(valueWai);
         const tx1 = await lottery.connect(getUser()).attempt({
             value: valueWai,
         });
         const res = await tx1.wait();
-        if (res.events.length > 1) {
-            const {winAmount} = res.events[1].args;
+        const winEvent = res.events.find((item: any) => item.event === 'Win');
+        if (winEvent) {
+            const {winAmount, count} = winEvent.args;
             totalWin = totalWin.add(winAmount);
+            const afterBalance = await lottery.getBalance();
+            console.log(
+                '   win',
+                formatWei(winAmount),
+                formatWei(beforeBalance),
+                formatWei(afterBalance),
+                count.toNumber() + ' / '+index,
+            );
             return true;
         }
 
@@ -129,7 +177,7 @@ describe('Lottery', function () {
         owner = signers.shift() as SignerWithAddress;
 
         const Lottery = await ethers.getContractFactory('LotteryTest');
-        lottery = await Lottery.deploy();
+        lottery = await Lottery.deploy(defaultSettings);
         await lottery.deployed()
     })
 
@@ -168,16 +216,18 @@ describe('Lottery', function () {
 
     it('[ok] settings', async function() {
         const newSettings: Settings = createSettings({
-            winRate: 50,
-            feeRate: 70,
             randomValue: 2000,
             minChance: 10,
             maxChance: 200,
+            winRate: 50,
+            feeRate: 70,
+            minRate: 30,
         });
         await expect(
             lottery.setSettings(newSettings)
         )
-            .to.emit(lottery, 'SettingsChanged');
+            .to.emit(lottery, 'SettingsChanged')
+            .withArgs(Object.values(newSettings));
         expect(await _getSettings()).to.deep.equal(defaultSettings);
         expect(await _getSettings(true)).to.deep.equal(newSettings);
 
@@ -187,7 +237,7 @@ describe('Lottery', function () {
          * if (chance > settings.maxChance) {
          * in sol file
          */
-        await _attempt(true, 1);
+        await _attempt(true, getMinValue());
         await _setMaxChance();
         await _attempt(true, 1000000);
 
@@ -230,12 +280,14 @@ describe('Lottery', function () {
         await expect(
             _attempt(false, 0)
         ).to.revertedWith('no zero money');
+
+        expect(await lottery.totalCount()).to.eq(0);
     })
 
     it('[ok] attempt - maxChance', async function() {
         await _addBalance(true)
 
-        await _attempt(true, 1);
+        await _attempt(true, getMinValue());
         await _attempt(true, 10000);
     })
 
@@ -299,24 +351,33 @@ describe('Lottery', function () {
         expect(await lottery.getBalance()).to.eq(remainderValue);
     })
 
-    itEach('[ok] admin win [${value}]', [1, 2, 3, 4, 5], async function(value: any) {
+    itEach.only('[ok] admin win [${value}]', [1], async function(value: any) {
         totalWin = BigNumber.from(0);
         const addStart = BigNumber.from(''+Math.floor(0.01 * (10**18)));
         await _addBalance(true, addStart);
 
         const startBalance = await owner.getBalance();
+        console.log('');
+        console.log('------ start new win', ethers.utils.formatEther(startBalance));
 
         let winner: boolean = false;
-        const maxCount = 1000;
+        const maxCount = 2000;
+        let tryCount = 0;
         for (let i=0; i<maxCount; i++) {
             if (i === maxCount - 1) {
                 await _setMaxChance();
             }
-            winner = await attemptRandom();
+            winner = await attemptRandom(i+1);
+            if (winner) {
+                // console.log('winner', tryCount);
+            }
+            tryCount++;
         }
         const finishBalance = await owner.getBalance();
         const adminWin = finishBalance.sub(startBalance);
-        expect(adminWin).to.gt(ethers.utils.parseEther('0.04'));
+        console.log('totalWin', ethers.utils.formatEther(totalWin));
+        console.log('adminWin', ethers.utils.formatEther(adminWin));
+        //expect(adminWin).to.gt(ethers.utils.parseEther('0.04'));
     })
 
 

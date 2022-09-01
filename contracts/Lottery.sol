@@ -11,6 +11,7 @@ contract Lottery {
         uint maxChance;
         uint winRate;
         uint feeRate;
+        uint minRate;
     }
     address payable public owner;
     uint public totalCount = 0;
@@ -20,13 +21,14 @@ contract Lottery {
     Settings public newSettings;
     bool private isNewSettings;
 
-    constructor() {
+    constructor(Settings memory s) {
         owner = payable(msg.sender);
-        settings.randomValue = 1000;
-        settings.minChance = 1;
-        settings.maxChance = 100;
-        settings.winRate = 90;
-        settings.feeRate = 90;
+        settings.randomValue = s.randomValue;
+        settings.minChance = s.minChance;
+        settings.maxChance = s.maxChance;
+        settings.winRate = s.winRate;
+        settings.feeRate = s.feeRate;
+        settings.minRate = s.minRate;
     }
 
     event Add(uint addAmount);
@@ -46,10 +48,11 @@ contract Lottery {
 
     function setSettings(Settings calldata updateSettings) external onlyOwner {
         newSettings.randomValue = updateSettings.randomValue;
-        newSettings.winRate = updateSettings.winRate;
-        newSettings.feeRate = updateSettings.feeRate;
         newSettings.minChance = updateSettings.minChance;
         newSettings.maxChance = updateSettings.maxChance;
+        newSettings.winRate = updateSettings.winRate;
+        newSettings.feeRate = updateSettings.feeRate;
+        newSettings.minRate = updateSettings.minRate;
         isNewSettings = true;
 
         emit SettingsChanged(newSettings);
@@ -66,12 +69,16 @@ contract Lottery {
     function attempt() public payable {
         require(msg.sender != owner, "no owner");
         require(msg.value > 0, "no zero money");
-        totalCount ++;
 
         uint totalBalance = address(this).balance;
         require(totalBalance > msg.value, "empty balance");
 
-        uint chance = settings.minChance + (msg.value / (totalBalance - msg.value)) * (settings.maxChance - settings.minChance);
+        uint beforeBalance = totalBalance - msg.value;
+        require(msg.value >= (beforeBalance * settings.minRate) / 1000, "small bet");
+
+        totalCount ++;
+
+        uint chance = settings.minChance + (msg.value / beforeBalance) * (settings.maxChance - settings.minChance);
         if (chance > settings.maxChance) {
             chance = settings.maxChance;
         }
@@ -109,16 +116,18 @@ contract Lottery {
             if (isNewSettings) {
                 isNewSettings = false;
                 settings.randomValue = newSettings.randomValue;
-                settings.winRate = newSettings.winRate;
-                settings.feeRate = newSettings.feeRate;
                 settings.minChance = newSettings.minChance;
                 settings.maxChance = newSettings.maxChance;
+                settings.winRate = newSettings.winRate;
+                settings.feeRate = newSettings.feeRate;
+                settings.minRate = newSettings.minRate;
 
                 newSettings.randomValue = 0;
-                newSettings.winRate = 0;
-                newSettings.feeRate = 0;
                 newSettings.minChance = 0;
                 newSettings.maxChance = 0;
+                newSettings.winRate = 0;
+                newSettings.feeRate = 0;
+                newSettings.minRate = 0;
             }
         }
     }

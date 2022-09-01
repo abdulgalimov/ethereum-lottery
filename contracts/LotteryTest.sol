@@ -6,14 +6,17 @@ import "./Lottery.sol";
 
 
 contract LotteryTest is Lottery {
+    constructor(Settings memory settings) Lottery(settings) {
+    }
 
     function setTestSettings(Settings calldata updateSettings) external onlyOwner {
         settings.randomValue = updateSettings.randomValue;
-        settings.winRate = updateSettings.winRate;
-        settings.feeRate = updateSettings.feeRate;
         settings.minChance = updateSettings.minChance;
         settings.maxChance = updateSettings.maxChance;
+        settings.winRate = updateSettings.winRate;
+        settings.feeRate = updateSettings.feeRate;
+        settings.minRate = updateSettings.minRate;
 
-        emit SettingsChanged(newSettings);
+        emit SettingsChanged(settings);
     }
 }
