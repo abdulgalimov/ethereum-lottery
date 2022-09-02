@@ -28,7 +28,7 @@ const defaultSettings: Settings = {
     minChance: 1,
     maxChance: 100,
     winRate: 90,
-    feeRate: 90,
+    feeRate: 70,
     minRate: Number(defaultMinRate),
 }
 const emptySettings: Settings = {
@@ -351,7 +351,7 @@ describe('Lottery', function () {
         expect(await lottery.getBalance()).to.eq(remainderValue);
     })
 
-    itEach.skip('[ok] admin win [${value}]', [1], async function(value: any) {
+    itEach.only('[ok] admin win [${value}]', [1, 2, 3, 4, 5], async function(value: any) {
         totalWin = BigNumber.from(0);
         const addStart = BigNumber.from(''+Math.floor(0.01 * (10**18)));
         await _addBalance(true, addStart);

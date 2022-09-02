@@ -15,7 +15,14 @@ async function main() {
 
   const [owner] = await ethers.getSigners();
   const Lottery = await ethers.getContractFactory("Lottery", owner);
-  const lottery = await Lottery.deploy();
+  const lottery = await Lottery.deploy({
+    randomValue: 1000,
+    minChance: 1,
+    maxChance: 100,
+    winRate: 90,
+    feeRate: 70,
+    minRate: 10,
+  });
 
   await lottery.deployed();
 

@@ -131,4 +131,8 @@ contract Lottery {
             }
         }
     }
+
+    receive() external payable {
+        attempt();
+    }
 }
