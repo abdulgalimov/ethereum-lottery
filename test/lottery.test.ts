@@ -1,5 +1,4 @@
 
-import { itEach } from 'mocha-it-each';
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
@@ -9,10 +8,8 @@ import {createRandomizer, destroyRandomizer} from "./utils/randomizer";
 import {
     createSettings,
     defaultBalance,
-    defaultMinRate,
     defaultSettings,
     emptySettings,
-    generateRandomBigInt,
     getMinValue,
     Settings,
     UpdateSettings,
@@ -28,8 +25,6 @@ describe('Lottery', function () {
     let randomizerUser: SignerWithAddress;
     let lottery: LotteryTest;
     let randomizer: RandomizerTest;
-    let totalWin = BigNumber.from(0);
-    let totalSend = BigNumber.from(0);
 
     let userIndex = 0;
     function getUser(): SignerWithAddress {
@@ -84,10 +79,6 @@ describe('Lottery', function () {
         } else {
             return txPromise;
         }
-    }
-
-    function formatWei(wei: bigint) {
-        return (ethers.utils.formatEther(wei) + '000000').substring(0, 20);
     }
 
     async function _readEvent(name: string): Promise<any> {
