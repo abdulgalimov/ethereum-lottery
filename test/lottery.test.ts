@@ -66,7 +66,10 @@ describe('Lottery', function () {
     }
 
     async function _setMaxChance() {
-        await _setTestSettings({minChance: 1000, maxChance: 1001});
+        await _setTestSettings({
+            minChance: defaultSettings.randomValue,
+            maxChance: defaultSettings.randomValue+1
+        });
     }
 
     function _attempt(wait?: boolean, value?: number, user?: SignerWithAddress) {
@@ -171,7 +174,7 @@ describe('Lottery', function () {
 
         await _setMaxChance();
         await _attempt(true, 1000000);
-        await _readEvent('Try');
+        await _readEvent('Win');
 
         expect(await _getSettings()).to.deep.equal(newSettings);
         expect(await _getSettings(true)).to.deep.equal(emptySettings);
@@ -325,7 +328,7 @@ describe('Lottery', function () {
     })
 })
 
-describe.only('test algorithm', function () {
+describe.skip('test algorithm', function () {
     const settings = defaultSettings;
     let ownerBalance = BigNumber.from(0);
     let lotteryBalance = ethers.utils.parseEther('0.1');
