@@ -21,7 +21,7 @@ export interface UpdateSettings {
     randomizer?: string;
 }
 
-export const defaultMinRate: bigint = 10n;
+export const defaultMinRate: bigint = 1n;
 export const defaultSettings: Settings = {
     randomValue: 1000,
     minChance: 1,
@@ -104,4 +104,9 @@ export function expectEvent (event: any, data: any) {
     Object.entries(data).forEach(([key, value]) => {
         expect(value).to.eq(event[key] instanceof BigNumber ? event[key].toNumber() : event[key]);
     })
+}
+
+
+export function toWei(eth: number): BigNumber {
+    return BigNumber.from(eth).mul(10**18);
 }

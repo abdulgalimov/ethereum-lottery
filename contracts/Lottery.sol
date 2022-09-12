@@ -84,7 +84,7 @@ contract Lottery {
         require(totalBalance > msg.value, "empty balance");
 
         uint beforeBalance = totalBalance - msg.value;
-        require(msg.value >= (beforeBalance * settings.minRate) / 1000, "small bet");
+        require(msg.value >= (beforeBalance * settings.minRate) / 100, "small bet");
 
         require(currentValue == 0, "draw in progress");
 
@@ -117,9 +117,7 @@ contract Lottery {
             if (stopped) {
                 owner.transfer(feeValue);
             } else {
-                uint b1 = owner.balance;
                 owner.transfer((feeValue * settings.feeRate) / 100);
-                uint b2 = owner.balance;
             }
 
             address payable winner = payable(currentSender);

@@ -14,7 +14,7 @@ import {
     Settings,
     UpdateSettings,
     expectBalanceChange,
-    expectEvent
+    expectEvent, toWei
 } from "./utils/utils";
 
 describe('Lottery', function () {
@@ -227,6 +227,23 @@ describe('Lottery', function () {
         expect(await lottery.totalCount()).to.eq(0);
     })
 
+    it('[fail] attempt - small bet', async function() {
+        await _addBalance(true)
+
+        const balance = await lottery.getBalance();
+        const minValue = balance.toNumber() * defaultSettings.minRate / 100;
+
+        await _attempt(true, minValue);
+        await _readEvent('Try');
+        expect(await lottery.totalCount()).to.eq(1);
+
+        await expect(
+            _attempt(false, minValue-1)
+        ).to.revertedWith('small bet');
+
+        expect(await lottery.totalCount()).to.eq(1);
+    })
+
     it('[ok] attempt - maxChance', async function() {
         await _addBalance(true)
 
@@ -307,3 +324,17 @@ describe('Lottery', function () {
         expect(await lottery.getBalance()).to.eq(remainderValue);
     })
 })
+
+describe('alg', function () {
+    console.log('test alg');
+    let owner = 0;
+    const users = new Array(10).map(item => toWei(100));
+    function getRandomUser() {
+        const index = Math.floor(Math.random()*users.length);
+        return users[index];
+    }
+
+    function tryGame(value: number) {
+        const rnd = Math.floor(Math.random()*defaultSettings.randomValue);
+    }
+});
