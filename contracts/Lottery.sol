@@ -1,8 +1,8 @@
-
 // SPDX-License-Identifier: UNLICENSED
 
 pragma solidity ^0.8.16;
 
+import "./IRandomizer.sol";
 
 contract Lottery {
     struct Settings {
@@ -12,6 +12,7 @@ contract Lottery {
         uint winRate;
         uint feeRate;
         uint minRate;
+        IRandomizer randomizer;
     }
     address payable public owner;
     uint public totalCount = 0;
@@ -21,6 +22,9 @@ contract Lottery {
     Settings public newSettings;
     bool private isNewSettings;
 
+    address private currentSender;
+    uint private currentValue;
+
     constructor(Settings memory s) {
         owner = payable(msg.sender);
         settings.randomValue = s.randomValue;
@@ -29,10 +33,11 @@ contract Lottery {
         settings.winRate = s.winRate;
         settings.feeRate = s.feeRate;
         settings.minRate = s.minRate;
+        settings.randomizer = s.randomizer;
     }
 
     event Add(uint addAmount);
-    event Try(uint tryAmount, uint count, uint totalAmount);
+    event Try(uint tryAmount, uint count, uint totalAmount, bool isWin);
     event Win(uint winAmount, uint count);
     event SettingsChanged(Settings settings);
 
@@ -53,6 +58,7 @@ contract Lottery {
         newSettings.winRate = updateSettings.winRate;
         newSettings.feeRate = updateSettings.feeRate;
         newSettings.minRate = updateSettings.minRate;
+        newSettings.randomizer = updateSettings.randomizer;
         isNewSettings = true;
 
         emit SettingsChanged(newSettings);
@@ -66,6 +72,10 @@ contract Lottery {
         return address(this).balance;
     }
 
+    receive() external payable {
+        attempt();
+    }
+
     function attempt() public payable {
         require(msg.sender != owner, "no owner");
         require(msg.value > 0, "no zero money");
@@ -76,40 +86,46 @@ contract Lottery {
         uint beforeBalance = totalBalance - msg.value;
         require(msg.value >= (beforeBalance * settings.minRate) / 1000, "small bet");
 
+        require(currentValue == 0, "draw in progress");
+
+        currentSender = msg.sender;
+        currentValue = msg.value;
+
+        settings.randomizer.getRandom();
+    }
+
+    function receiveRandom(uint randomUint) external {
+        require(msg.sender == address(settings.randomizer), "randomizer only");
         totalCount ++;
 
-        uint chance = settings.minChance + (msg.value / beforeBalance) * (settings.maxChance - settings.minChance);
+        uint totalBalance = address(this).balance;
+        uint beforeBalance = totalBalance - currentValue;
+
+        uint chance = settings.minChance + (currentValue / beforeBalance) * (settings.maxChance - settings.minChance);
         if (chance > settings.maxChance) {
             chance = settings.maxChance;
         }
 
-        uint rnd = uint(
-            keccak256(
-                abi.encodePacked(
-                    block.timestamp,
-                    block.difficulty,
-                    block.number,
-                    msg.sender,
-                    msg.value
-                )
-            )
-        ) % settings.randomValue;
-        emit Try(msg.value, totalCount, totalBalance);
+        uint rnd = randomUint % settings.randomValue;
+        bool isWin = rnd <= chance;
+        emit Try(currentValue, totalCount, totalBalance, isWin);
 
-        if (rnd <= chance) {
+        if (isWin) {
             uint winAmount = (totalBalance * settings.winRate) / 100;
             uint feeValue = totalBalance - winAmount;
 
             if (stopped) {
                 owner.transfer(feeValue);
             } else {
+                uint b1 = owner.balance;
                 owner.transfer((feeValue * settings.feeRate) / 100);
+                uint b2 = owner.balance;
             }
 
-            emit Win(winAmount, totalCount);
-
-            address payable winner = payable(msg.sender);
+            address payable winner = payable(currentSender);
             winner.transfer(winAmount);
+
+            emit Win(winAmount, totalCount);
 
             totalCount = 0;
 
@@ -121,6 +137,7 @@ contract Lottery {
                 settings.winRate = newSettings.winRate;
                 settings.feeRate = newSettings.feeRate;
                 settings.minRate = newSettings.minRate;
+                settings.randomizer = newSettings.randomizer;
 
                 newSettings.randomValue = 0;
                 newSettings.minChance = 0;
@@ -128,11 +145,10 @@ contract Lottery {
                 newSettings.winRate = 0;
                 newSettings.feeRate = 0;
                 newSettings.minRate = 0;
+                newSettings.randomizer = IRandomizer(address(0));
             }
         }
-    }
 
-    receive() external payable {
-        attempt();
+        currentValue = 0;
     }
 }

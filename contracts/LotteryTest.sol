@@ -16,7 +16,13 @@ contract LotteryTest is Lottery {
         settings.winRate = updateSettings.winRate;
         settings.feeRate = updateSettings.feeRate;
         settings.minRate = updateSettings.minRate;
+        settings.randomizer = updateSettings.randomizer;
 
         emit SettingsChanged(settings);
+    }
+
+    uint test = 0;
+    function testUpdate() external {
+        test++;
     }
 }
