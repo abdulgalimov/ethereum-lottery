@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.16;
 
-import "./ILottery.sol";
+import "../ILottery.sol";
 
 contract RandomizerTest {
     address owner;

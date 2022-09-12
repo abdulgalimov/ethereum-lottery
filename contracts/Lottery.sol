@@ -88,10 +88,14 @@ contract Lottery {
 
         require(currentValue == 0, "draw in progress");
 
-        currentSender = msg.sender;
-        currentValue = msg.value;
+        (bool success, ) = address(settings.randomizer).call(abi.encodeWithSignature("getRandom()"));
 
-        settings.randomizer.getRandom();
+        if (success) {
+            currentSender = msg.sender;
+            currentValue = msg.value;
+        } else {
+            revert("invalid call randomizer");
+        }
     }
 
     function receiveRandom(uint randomUint) external {

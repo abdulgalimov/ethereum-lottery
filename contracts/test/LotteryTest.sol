@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.16;
 
-import "./Lottery.sol";
+import "../Lottery.sol";
 
 
 contract LotteryTest is Lottery {
