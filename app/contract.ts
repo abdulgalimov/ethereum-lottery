@@ -1,23 +1,44 @@
 import Web3 from 'web3';
-import {NetworkInfo} from "./networks";
+import {NetworkInfo, NetworkType} from "./networks";
 
 type Callback = (name: string, ...args: any[]) => {};
 
-export async function init(network: NetworkInfo, callback: Callback) {
-    const { providerUrl, filename } = network;
+let web3: Web3;
+let callback: Callback;
+let ownerAddress: string;
+let lotteryAddress: string;
+let randomizerAddress: string;
+export async function init(_network: NetworkInfo, _callback: Callback) {
+    callback = _callback;
 
-    const web3 = new Web3(providerUrl);
-    const LotteryArtifacts = require('../artifacts/contracts/Lottery.sol/Lottery.json')
+    const { type, providerUrl, filename } = _network;
+
+    web3 = new Web3(providerUrl);
+
     const LotteryInfo = require(`../data/${filename}`);
+    ownerAddress = LotteryInfo.owner;
+    lotteryAddress = LotteryInfo.lottery;
+    randomizerAddress = LotteryInfo.randomizer;
+
+    connectToLottery();
+    if (type === NetworkType.localhost) {
+        connectToRandomizer();
+    }
+}
+
+
+function connectToLottery() {
+    const LotteryArtifacts = require('../artifacts/contracts/Lottery.sol/Lottery.json')
 
     const lotteryContract = new web3.eth.Contract(
         LotteryArtifacts.abi,
-        LotteryInfo.address,
+        lotteryAddress,
     );
     lotteryContract.events.Add()
         .on('data', async function (event: any) {
             const { addAmount } = event.returnValues;
             callback('add', addAmount);
+            console.log('add', addAmount);
         });
 
     lotteryContract.events.Try()
@@ -37,4 +58,25 @@ export async function init(network: NetworkInfo, callback: Callback) {
             const { settings } = event.returnValues;
             console.log('[change settings]', settings);
         })
+}
+
+
+function connectToRandomizer() {
+    const RandomizerArtifacts = require('../artifacts/contracts/RandomizerTest.sol/RandomizerTest.json')
+
+    const randomizerContract = new web3.eth.Contract(
+        RandomizerArtifacts.abi,
+        randomizerAddress,
+    );
+    async function sendToRandomizer() {
+        const options = {
+            from: ownerAddress
+        };
+        const need = await (await randomizerContract.methods.needRandom()).call(options);
+        if (need) {
+            const res = await randomizerContract.methods.sendIfNeed();
+            await res.send(options);
+        }
+    }
+    setInterval(sendToRandomizer, 1000)
 }

@@ -9,36 +9,46 @@ const GOERLI_SCAN = `https://goerli.etherscan.io/tx/$hash`;
 
 const MAINNET_PROVIDER = `wss://${ALCHEMY_API_URL}/${ALCHEMY_API_KEY}`;
 
+export enum NetworkType {
+    localhost = 'localhost',
+    goerli = 'goerli',
+    mainnet = 'mainnet',
+}
+
 export interface NetworkInfo {
+    type: NetworkType
     filename: string;
     providerUrl: string;
     scanUrl: string;
 }
 
-export default function getInfo(network: any): NetworkInfo {
-    console.log('network', network);
-    network = network || 'localhost';
-    switch (network) {
-        case 'localhost':
+export default function getInfo(networkType: NetworkType | string | undefined): NetworkInfo {
+    console.log('network', networkType);
+    networkType = networkType || 'localhost';
+    switch (networkType) {
+        case NetworkType.localhost:
             return {
+                type: networkType,
                 filename: 'lottery-localhost.json',
                 providerUrl: LOCALHOST_PROVIDER,
                 scanUrl: '',
             }
-        case 'goerli':
+        case NetworkType.goerli:
             return {
+                type: networkType,
                 filename: 'lottery-goerli.json',
                 providerUrl: GOERLI_PROVIDER,
                 scanUrl: GOERLI_SCAN,
             };
-        case 'mainnet':
+        case NetworkType.mainnet:
             return {
+                type: networkType,
                 filename: 'lottery-mainnet.json',
                 providerUrl: MAINNET_PROVIDER,
                 scanUrl: '',
             };
         default:
-            console.log(`invalid network: "${network}", use --network=localhost | goerli | mainnet`);
+            console.log(`invalid network: "${networkType}", use --network=localhost | goerli | mainnet`);
             process.exit(1);
     }
 }

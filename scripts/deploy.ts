@@ -32,13 +32,17 @@ async function main() {
   });
   await lottery.deployed();
 
+  await (await randomizer.setLottery(lottery.address)).wait();
+
   console.log(`deploy to:
 owner: ${owner.address}
 lottery: ${lottery.address}
+randomizer: ${randomizer.address}
 `);
   fs.writeFileSync(path.resolve(dataDir, filename), JSON.stringify({
     owner: owner.address,
-    address: lottery.address
+    lottery: lottery.address,
+    randomizer: randomizer.address,
   }, null, 2));
 }
 
