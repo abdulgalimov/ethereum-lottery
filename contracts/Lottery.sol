@@ -101,7 +101,7 @@ contract Lottery {
         uint totalBalance = address(this).balance;
         uint beforeBalance = totalBalance - currentValue;
 
-        uint chance = settings.minChance + (currentValue / beforeBalance) * (settings.maxChance - settings.minChance);
+        uint chance = settings.minChance + (currentValue * (settings.maxChance - settings.minChance) / beforeBalance);
         if (chance > settings.maxChance) {
             chance = settings.maxChance;
         }

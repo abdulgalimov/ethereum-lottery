@@ -23,11 +23,11 @@ export interface UpdateSettings {
 
 export const defaultMinRate: bigint = 1n;
 export const defaultSettings: Settings = {
-    randomValue: 1000,
-    minChance: 1,
-    maxChance: 100,
+    randomValue: 10000,
+    minChance: 10,
+    maxChance: 1000,
     winRate: 90,
-    feeRate: 70,
+    feeRate: 90,
     minRate: Number(defaultMinRate),
     randomizer: '',
 }
@@ -108,5 +108,5 @@ export function expectEvent (event: any, data: any) {
 
 
 export function toWei(eth: number): BigNumber {
-    return BigNumber.from(eth).mul(10**18);
+    return BigNumber.from(eth).mul(BigNumber.from('1000000000000000000'));
 }

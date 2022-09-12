@@ -14,7 +14,7 @@ import {
     Settings,
     UpdateSettings,
     expectBalanceChange,
-    expectEvent, toWei
+    expectEvent, toWei, defaultMinRate
 } from "./utils/utils";
 
 describe('Lottery', function () {
@@ -325,16 +325,89 @@ describe('Lottery', function () {
     })
 })
 
-describe('alg', function () {
-    console.log('test alg');
-    let owner = 0;
-    const users = new Array(10).map(item => toWei(100));
-    function getRandomUser() {
-        const index = Math.floor(Math.random()*users.length);
-        return users[index];
+describe.only('test algorithm', function () {
+    const settings = defaultSettings;
+    let ownerBalance = BigNumber.from(0);
+    let lotteryBalance = ethers.utils.parseEther('0.1');
+    const users: Array<BigNumber> = [];
+    const maxValue = ethers.utils.parseEther('0.1');
+    for (let i=0; i< 1000; i++) users.push(toWei(2));
+    function formatUsers() {
+        console.log('format users: ')
+        users.forEach((value, index) => console.log(`${index}:`, ethers.utils.formatEther(value)));
     }
 
-    function tryGame(value: number) {
-        const rnd = Math.floor(Math.random()*defaultSettings.randomValue);
+    function getRandomUser() {
+        return Math.floor(Math.random()*users.length);
     }
+    function getValue() {
+        const step = 1000000;
+        const k = 1 + Math.random()*5 * step;
+        const minRate = BigNumber.from(Math.floor(settings.minRate*k));
+        const value = lotteryBalance.mul(minRate).div(BigNumber.from(100*step));
+        if (value.lt(maxValue)) {
+            return value;
+        } else {
+            return maxValue;
+        }
+    }
+
+    function tryGame(gameIndex: number, userIndex:number, currentValue: BigNumber) {
+        // console.log('----- tryGame', userIndex, ethers.utils.formatEther(currentValue));
+        lotteryBalance = lotteryBalance.add(currentValue);
+        const totalBalance = lotteryBalance;
+        const beforeBalance = lotteryBalance.sub(currentValue);
+
+        const rnd = Math.floor(Math.random()*settings.randomValue);
+        let chance = settings.minChance + currentValue.mul(settings.maxChance - settings.minChance).div(beforeBalance).toNumber();
+
+        if (chance > settings.maxChance) {
+            chance = settings.maxChance;
+        }
+        if (rnd <= chance) {
+            const winAmount = totalBalance.mul(settings.winRate).div(100);
+            const feeValue = totalBalance.sub(winAmount);
+            const ownerValue = feeValue.mul(settings.feeRate).div(100);
+
+            users[userIndex] = users[userIndex].add(BigNumber.from(winAmount));
+            ownerBalance = ownerBalance.add(BigNumber.from(ownerValue));
+            lotteryBalance = lotteryBalance.sub(winAmount).sub(ownerValue);
+            console.log(
+                'win',
+                `[${gameIndex}]`,
+                ethers.utils.formatEther(winAmount),
+                ethers.utils.formatEther(lotteryBalance),
+                ethers.utils.formatEther(currentValue)
+            );
+            return true;
+        } else {
+            // console.log('try', `[${gameIndex}]`, ethers.utils.formatEther(lotteryBalance));
+        }
+        return false;
+    }
+
+    it('should', function () {
+        let gameIndex = 0;
+        let offUsersCount = 0;
+        let winCount = 0;
+        for (let i=0; i<10000; i++) {
+            const user = getRandomUser();
+            const value = getValue();
+            users[user] = users[user].sub(value);
+            const isWin = tryGame(++gameIndex, user, getValue());
+            if (isWin) {
+                winCount++;
+                gameIndex = 0;
+            } else if (users[user].lt(0)) {
+                offUsersCount++;
+                users.splice(user, 1);
+            }
+        }
+        console.log('winCount', winCount);
+        console.log('offUsersCount', offUsersCount);
+        console.log('lottery', ethers.utils.formatEther(lotteryBalance));
+
+        const bonus = lotteryBalance.mul(100-settings.winRate).div(100);
+        console.log('owner', ethers.utils.formatEther(ownerBalance), `(+${ethers.utils.formatEther(bonus)})`);
+    });
 });
