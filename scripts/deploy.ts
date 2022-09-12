@@ -2,7 +2,7 @@ import { ethers } from "hardhat";
 import fs from 'fs';
 import path from 'path';
 import networks from '../app/networks';
-import {defaultMinRate} from "../test/utils/utils";
+import { defaultSettings } from "../test/utils/utils";
 
 const dataDir = 'data';
 if (!fs.existsSync(dataDir)) {
@@ -21,15 +21,7 @@ async function main() {
   await randomizer.deployed();
 
   const Lottery = await ethers.getContractFactory("Lottery", owner);
-  const lottery = await Lottery.deploy({
-    randomValue: 10000,
-    minChance: 10,
-    maxChance: 1000,
-    winRate: 90,
-    feeRate: 90,
-    minRate: Number(defaultMinRate),
-    randomizer: randomizer.address,
-  });
+  const lottery = await Lottery.deploy(defaultSettings);
   await lottery.deployed();
 
   await (await randomizer.setLottery(lottery.address)).wait();

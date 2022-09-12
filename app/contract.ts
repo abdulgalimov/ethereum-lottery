@@ -74,6 +74,7 @@ function connectToRandomizer() {
         };
         const need = await (await randomizerContract.methods.needRandom()).call(options);
         if (need) {
+            console.log('send need');
             const res = await randomizerContract.methods.sendIfNeed();
             await res.send(options);
         }

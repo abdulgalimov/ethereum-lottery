@@ -16,7 +16,7 @@ const tryMessageTemplate = `
 🔢 Count: $count
 💰 Total balance: $totalAmount`;
 const winMessageTemplate = `
-🎉 Win
+🎉 #Win
 💰 Total balance: $totalAmount;
 `;
 export function notifyEvent(name: string, ...args: any[]) {
