@@ -1,20 +1,20 @@
-
-import { expect } from "chai";
-import { ethers } from "hardhat";
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { BigNumber } from "ethers";
-import {LotteryTest, RandomizerTest} from "../typechain-types";
-import {createRandomizer, destroyRandomizer} from "./utils/randomizer";
+import {expect} from "chai";
+import {ethers} from "hardhat";
+import {SignerWithAddress} from "@nomiclabs/hardhat-ethers/signers";
+import {BigNumber} from "ethers";
+import {LotteryTest} from "../typechain-types";
+import {createRandomizer, IRandomizerInfo, RandomizerType} from "./utils/randomizer";
 import {
     createSettings,
     defaultBalance,
     defaultSettings,
     emptySettings,
+    expectBalanceChange,
+    expectEvent,
     getMinValue,
     Settings,
+    toWei,
     UpdateSettings,
-    expectBalanceChange,
-    expectEvent, toWei, defaultMinRate
 } from "./utils/utils";
 
 describe('Lottery', function () {
@@ -24,7 +24,7 @@ describe('Lottery', function () {
     let signers: SignerWithAddress[];
     let randomizerUser: SignerWithAddress;
     let lottery: LotteryTest;
-    let randomizer: RandomizerTest;
+    let randomizer: IRandomizerInfo;
 
     let userIndex = 0;
     function getUser(): SignerWithAddress {
@@ -97,7 +97,7 @@ describe('Lottery', function () {
         owner = signers.shift() as SignerWithAddress;
         randomizerUser = signers.shift() as SignerWithAddress;
 
-        randomizer = await createRandomizer(randomizerUser);
+        randomizer = await createRandomizer(RandomizerType.CHAINLINK, randomizerUser);
         defaultSettings.randomizer = randomizer.address;
 
         const Lottery = await ethers.getContractFactory('LotteryTest');
@@ -108,8 +108,8 @@ describe('Lottery', function () {
     })
 
     afterEach(() => {
-        lottery.removeAllListeners();
-        destroyRandomizer();
+        if (lottery) lottery.removeAllListeners();
+        if (randomizer) randomizer.destroy();
     });
 
     it('[ok] create', async function () {
@@ -318,6 +318,7 @@ describe('Lottery', function () {
 
         await expectBalanceChange(receipt, winnerUser, winValue-attemptValue);
         await expectBalanceChange(receipt, owner, ownerValue);
+        await expectBalanceChange(receipt, randomizerUser, -120766548515979);
         expectEvent(winEvent.args, {
             winAmount: winValue,
             count: 2,
