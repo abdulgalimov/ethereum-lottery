@@ -95,9 +95,15 @@ export async function getBalanceDelta(receipt: any, signer: SignerWithAddress): 
     }
 }
 
-export async function expectBalanceChange(receipt: any, signer: SignerWithAddress, value: number | BigNumber): Promise<void> {
+export async function expectBalanceChange(receipt: any, signer: SignerWithAddress, value: number | BigNumber | Array<number>): Promise<void> {
     const delta = await getBalanceDelta(receipt, signer);
-    expect(value).to.eq(delta);
+    if (typeof value === 'number') {
+        expect(delta).to.eq(value);
+    } else if (Array.isArray(value)) {
+        expect(delta).to
+            .gte(value[0])
+            .lte(value[1]);
+    }
 }
 
 export function expectEvent (event: any, data: any) {
