@@ -46,9 +46,9 @@ describe('Lottery', function () {
         }
     }
 
-    function _addBalance(wait?:boolean, value?: BigNumber, otherUser?: boolean) {
+    function _addBalance(wait?:boolean, value?: number, otherUser?: boolean) {
         const options = {
-            value: value || defaultBalance
+            value: value !== undefined ? BigNumber.from(value) : defaultBalance
         };
         const txPromise = otherUser
             ? lottery.connect(getUser()).addBalance(options)
@@ -119,29 +119,31 @@ describe('Lottery', function () {
 
         expect(await lottery.totalCount()).to.eq(0);
         expect(await lottery.getBalance()).to.eq(0);
+        expect(await lottery.owner()).to.eq(owner.address);
+        expect(await lottery.stopped()).to.eq(false);
     })
 
     it('[ok] addBalance', async function() {
+        const addValue = 123;
         await expect(
-            _addBalance(false)
+            _addBalance(false, addValue)
         )
             .to.emit(lottery, 'Add')
-            .withArgs(1000);
+            .withArgs(addValue);
 
         expect(await lottery.totalCount()).to.eq(0);
-        expect(await lottery.getBalance()).to.eq(1000);
+        expect(await lottery.getBalance()).to.eq(addValue);
     })
 
     it('[fail] addBalance', async function() {
         await expect(
-            _addBalance(false, BigNumber.from(0))
+            _addBalance(false, 0)
         ).to.revertedWith('zero value');
 
         await expect(
-            _addBalance(false, BigNumber.from(1000), true)
+            _addBalance(false, 1000, true)
         ).to.revertedWith('Owner only');
 
-        expect(await lottery.totalCount()).to.eq(0);
         expect(await lottery.getBalance()).to.eq(0);
     })
 
@@ -178,6 +180,7 @@ describe('Lottery', function () {
 
         expect(await _getSettings()).to.deep.equal(newSettings);
         expect(await _getSettings(true)).to.deep.equal(emptySettings);
+        expect(await lottery.totalCount()).to.eq(0);
     })
 
     it('gas used', async function() {
@@ -192,24 +195,40 @@ describe('Lottery', function () {
 
     it('[ok] attempt', async function() {
         const startBalance = 1000;
-        await _addBalance(true, BigNumber.from(startBalance));
-
-        const attemptValue = 10001
-        await _attempt(true, attemptValue);
-        const tryEvent = await _readEvent('Try');
-        expectEvent(tryEvent.args, {
-            tryAmount: attemptValue,
-            count: 1,
-            totalAmount: attemptValue + startBalance,
+        await _addBalance(true, startBalance);
+        await _setTestSettings({
+            minChance: 0,
+            maxChance: 0,
         })
 
-        expect(await lottery.totalCount()).to.eq(1);
-        expect(await lottery.getBalance()).to.eq(attemptValue + startBalance);
+        let totalCount = 0;
+        let totalValue = 0;
+        for (let i=0; i<10; i++) {
+            const attemptValue = 10000+i*10;
+
+            totalCount++;
+            totalValue += attemptValue;
+
+            await _attempt(true, attemptValue);
+            const tryEvent = await _readEvent('Try');
+            expectEvent(tryEvent.args, {
+                tryAmount: attemptValue,
+                count: totalCount,
+                totalAmount: startBalance + totalValue,
+                isWin: false
+            })
+        }
+
+        expect(await lottery.totalCount()).to.eq(totalCount);
+        expect(await lottery.getBalance()).to.eq(startBalance + totalValue);
     })
 
     it('[fail] attempt - no owner', async function() {
-        await _addBalance(true, BigNumber.from(200));
-        expect(_attempt(false, 100, owner)).to.revertedWith('no owner');
+        await _addBalance(true, 200);
+        expect(
+            _attempt(false, 100, owner)
+        )
+            .to.revertedWith('no owner');
 
         expect(await lottery.totalCount()).to.eq(0);
         expect(await lottery.getBalance()).to.eq(200);
@@ -223,28 +242,34 @@ describe('Lottery', function () {
     })
 
     it('[fail] attempt - no zero money', async function() {
+        await _addBalance(true, 200);
+
         await expect(
             _attempt(false, 0)
         ).to.revertedWith('no zero money');
 
         expect(await lottery.totalCount()).to.eq(0);
+        expect(await lottery.getBalance()).to.eq(200);
     })
 
     it('[fail] attempt - small bet', async function() {
-        await _addBalance(true)
+        const startBalance = 1000;
+        await _addBalance(true, startBalance);
 
         const balance = await lottery.getBalance();
-        const minValue = balance.toNumber() * defaultSettings.minRate / 100;
+        const minValue = Math.floor(balance.toNumber() * defaultSettings.minRate / 100);
 
         await _attempt(true, minValue);
         await _readEvent('Try');
         expect(await lottery.totalCount()).to.eq(1);
+        expect(await lottery.getBalance()).to.eq(startBalance + minValue);
 
         await expect(
             _attempt(false, minValue-1)
         ).to.revertedWith('small bet');
 
         expect(await lottery.totalCount()).to.eq(1);
+        expect(await lottery.getBalance()).to.eq(startBalance + minValue);
     })
 
     it('[ok] attempt - maxChance', async function() {
@@ -276,13 +301,18 @@ describe('Lottery', function () {
         );
         await _readEvent('Win');
         expect(await lottery.getBalance()).to.eq(0);
+        expect(await lottery.stopped()).to.eq(true);
 
         await expect(
             _attempt(false, 300)
         ).to.revertedWith('empty balance');
+        await expect(
+            _addBalance()
+        ).to.revertedWith('is stopped');
 
-        await _addBalance(true);
         await (await lottery.setStop(false)).wait();
+        expect(await lottery.stopped()).to.eq(false);
+        await _addBalance(true);
         await expect(
             _attempt(false, 300)
         );
@@ -293,7 +323,7 @@ describe('Lottery', function () {
         const winnerUser = signers[1];
 
         const addValue1 = 1000;
-        await _addBalance(true);
+        await _addBalance(true, addValue1);
 
         await _setTestSettings({minChance: 0, maxChance: 0});
 
@@ -318,7 +348,7 @@ describe('Lottery', function () {
 
         await expectBalanceChange(receipt, winnerUser, winValue-attemptValue);
         await expectBalanceChange(receipt, owner, ownerValue);
-        await expectBalanceChange(receipt, randomizerUser, [-120766548515979, -101919008357358]);
+        await expectBalanceChange(receipt, randomizerUser, [-123461280149325, -101919008357358]);
         expectEvent(winEvent.args, {
             winAmount: winValue,
             count: 2,

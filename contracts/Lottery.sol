@@ -48,6 +48,7 @@ contract Lottery {
 
     function addBalance() external payable onlyOwner {
         require(msg.value > 0, "zero value");
+        require(!stopped, "is stopped");
         emit Add(msg.value);
     }
 

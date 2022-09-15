@@ -33,7 +33,7 @@ async function createChainlinkRandomizer(user: SignerWithAddress): Promise<IRand
     const transactionReceipt = await transaction.wait(1)
     // @ts-ignore
     const subscriptionId = ethers.BigNumber.from(transactionReceipt.events[0].topics[1]);
-    await vrfMock.fundSubscription(subscriptionId, '1000000000000000000');
+    // await vrfMock.fundSubscription(subscriptionId, '1000000000000000000');
 
     const Randomizer = await ethers.getContractFactory('RandomizerChainlink');
     const randomizer: RandomizerChainlink = await Randomizer
