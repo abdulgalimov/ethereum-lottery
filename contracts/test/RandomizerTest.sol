@@ -3,20 +3,11 @@
 pragma solidity ^0.8.16;
 
 import "../ILottery.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract RandomizerTest {
-    address owner;
+contract RandomizerTest is Ownable {
     bool public needRandom;
     ILottery lottery;
-
-    constructor() {
-        owner = msg.sender;
-    }
-
-    modifier onlyOwner {
-        require(msg.sender == owner, "only owner");
-        _;
-    }
 
     function setLottery(address _lottery) external onlyOwner {
         lottery = ILottery(_lottery);

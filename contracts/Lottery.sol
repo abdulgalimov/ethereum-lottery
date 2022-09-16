@@ -3,8 +3,9 @@
 pragma solidity ^0.8.16;
 
 import "./IRandomizer.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract Lottery {
+contract Lottery is Ownable {
     struct Settings {
         uint randomValue;
         uint minChance;
@@ -14,7 +15,7 @@ contract Lottery {
         uint minRate;
         IRandomizer randomizer;
     }
-    address payable public owner;
+    address payable public lotteryOwner;
     uint public totalCount = 0;
     bool public stopped = false;
 
@@ -25,8 +26,8 @@ contract Lottery {
     address private currentSender;
     uint private currentValue;
 
-    constructor(Settings memory s) {
-        owner = payable(msg.sender);
+    constructor(Settings memory s) Ownable() {
+        lotteryOwner = payable(msg.sender);
         settings.randomValue = s.randomValue;
         settings.minChance = s.minChance;
         settings.maxChance = s.maxChance;
@@ -36,15 +37,15 @@ contract Lottery {
         settings.randomizer = s.randomizer;
     }
 
+    function _transferOwnership(address newOwner) internal override {
+        super._transferOwnership(newOwner);
+        lotteryOwner = payable(newOwner);
+    }
+
     event Add(uint addAmount);
     event Try(uint tryAmount, uint count, uint totalAmount, bool isWin);
     event Win(uint winAmount, uint count);
     event SettingsChanged(Settings settings);
-
-    modifier onlyOwner() {
-        require(msg.sender == owner, "Owner only");
-        _;
-    }
 
     function addBalance() external payable onlyOwner {
         require(msg.value > 0, "zero value");
@@ -78,7 +79,7 @@ contract Lottery {
     }
 
     function attempt() public payable {
-        require(msg.sender != owner, "no owner");
+        require(msg.sender != lotteryOwner, "no owner");
         require(msg.value > 0, "no zero money");
 
         uint totalBalance = address(this).balance;
@@ -120,9 +121,9 @@ contract Lottery {
             uint feeValue = totalBalance - winAmount;
 
             if (stopped) {
-                owner.transfer(feeValue);
+                lotteryOwner.transfer(feeValue);
             } else {
-                owner.transfer((feeValue * settings.feeRate) / 100);
+                lotteryOwner.transfer((feeValue * settings.feeRate) / 100);
             }
 
             address payable winner = payable(currentSender);

@@ -16,6 +16,7 @@ import {
     toWei,
     UpdateSettings,
 } from "./utils/utils";
+import { onlyOwnerMessage } from './utils/constants';
 
 describe('Lottery', function () {
     this.timeout(60000);
@@ -97,7 +98,7 @@ describe('Lottery', function () {
         owner = signers.shift() as SignerWithAddress;
         randomizerUser = signers.shift() as SignerWithAddress;
 
-        randomizer = await createRandomizer(RandomizerType.CHAINLINK, randomizerUser);
+        randomizer = await createRandomizer(RandomizerType.TEST, randomizerUser);
         defaultSettings.randomizer = randomizer.address;
 
         const Lottery = await ethers.getContractFactory('LotteryTest');
@@ -142,7 +143,7 @@ describe('Lottery', function () {
 
         await expect(
             _addBalance(false, 1000, true)
-        ).to.revertedWith('Owner only');
+        ).to.revertedWith(onlyOwnerMessage);
 
         expect(await lottery.getBalance()).to.eq(0);
     })
