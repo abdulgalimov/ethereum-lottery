@@ -1,38 +1,27 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { createSettings } from "./utils/utils";
-import { LotteryTest, RandomizerCustom } from "../typechain-types";
+import { RandomizerCustom } from "../typechain-types";
+import { createLottery } from "./utils/utils";
 
 describe("RandomizerCustom", () => {
   let signers: SignerWithAddress[];
   let owner: SignerWithAddress;
   let randomizerCustom: RandomizerCustom;
 
-  async function getLottery(): Promise<LotteryTest> {
-    const LotteryTest = await ethers.getContractFactory("LotteryTest");
-    const lottery = await LotteryTest.deploy(
-      createSettings({
-        randomizer: randomizerCustom.address,
-      })
-    );
-    await lottery.deployed();
-    return lottery;
-  }
-
   beforeEach(async () => {
     signers = await ethers.getSigners();
     owner = signers.shift() as SignerWithAddress;
 
-    const RandomizerCustom = await ethers.getContractFactory(
+    const RandomizerFactory = await ethers.getContractFactory(
       "RandomizerCustom"
     );
-    randomizerCustom = await RandomizerCustom.deploy();
+    randomizerCustom = await RandomizerFactory.deploy();
     await randomizerCustom.deployed();
   });
 
   it("set lottery ok", async () => {
-    const lottery = await getLottery();
+    const lottery = await createLottery(randomizerCustom.address);
     await (await randomizerCustom.setLottery(lottery.address)).wait();
   });
 
@@ -43,7 +32,7 @@ describe("RandomizerCustom", () => {
   });
 
   it("get random ok", async () => {
-    const lottery = await getLottery();
+    const lottery = await createLottery(randomizerCustom.address);
 
     await (await randomizerCustom.setLottery(lottery.address)).wait();
 
