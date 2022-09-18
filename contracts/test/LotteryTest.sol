@@ -25,4 +25,8 @@ contract LotteryTest is Lottery {
     function testUpdate() external {
         test++;
     }
+
+    function requestRandom() external {
+        settings.randomizer.getRandom();
+    }
 }

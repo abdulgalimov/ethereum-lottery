@@ -62,7 +62,7 @@ function connectToLottery() {
 
 
 function connectToRandomizer() {
-    const RandomizerArtifacts = require('../artifacts/contracts/RandomizerTest.sol/RandomizerTest.json')
+    const RandomizerArtifacts = require('../artifacts/contracts/RandomizerCustom.sol/RandomizerCustom.json')
 
     const randomizerContract = new web3.eth.Contract(
         RandomizerArtifacts.abi,

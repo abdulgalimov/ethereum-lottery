@@ -1,22 +1,22 @@
-import networks, {NetworkInfo} from "./networks";
+import networks, { NetworkInfo } from "./networks";
 
-require('dotenv').config();
+require("dotenv").config();
 
-import { init as initContract } from './contract';
-import { start as startBot, notifyEvent } from './bot';
+import { init as initContract } from "./contract";
+import { start as startBot, notifyEvent } from "./bot";
 
 async function main() {
-    console.log('[start dev:app]');
+  console.log("[start dev:app]");
 
-    const {npm_config_network, NETWORK} = process.env;
-    const network: NetworkInfo = networks(npm_config_network || NETWORK);
+  const { npm_config_network, NETWORK } = process.env;
+  const network: NetworkInfo = networks(npm_config_network || NETWORK);
 
-    await initContract(network, onEvent);
-    await startBot(network);
+  await initContract(network, onEvent);
+  await startBot(network);
 }
 
 async function onEvent(name: string, ...args: any[]) {
-    return notifyEvent(name, ...args);
+  return notifyEvent(name, ...args);
 }
 
 main();

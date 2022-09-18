@@ -2,18 +2,20 @@
 
 pragma solidity ^0.8.16;
 
-import "../ILottery.sol";
+import "./ILottery.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/Address.sol";
 
-contract RandomizerTest is Ownable {
+contract RandomizerCustom is Ownable {
     bool public needRandom;
     ILottery lottery;
 
-    function setLottery(address _lottery) external onlyOwner {
-        lottery = ILottery(_lottery);
+    function withdraw() external onlyOwner {
+        address payable ownerPay = payable(owner());
+        ownerPay.transfer(address(this).balance);
     }
 
-    function sendRandom() private {
+    function _sendRandom() private {
         uint rnd = uint(
             keccak256(
                 abi.encodePacked(
@@ -27,20 +29,22 @@ contract RandomizerTest is Ownable {
         lottery.receiveRandom(rnd);
     }
 
+    function setLottery(address _lottery) external onlyOwner {
+        require(Address.isContract(_lottery), "Address is not contract");
+        lottery = ILottery(_lottery);
+    }
+
     function getRandom() external returns(bool) {
+        require(msg.sender == address(lottery), "Lottery only");
         needRandom = true;
         return true;
     }
 
     function sendIfNeed() external {
         if (needRandom) {
-            sendRandom();
+            _sendRandom();
             needRandom = false;
         }
-    }
-
-    function getBalance() external view returns(uint256) {
-        return address(this).balance;
     }
 
     receive() external payable {}

@@ -1,10 +1,10 @@
 import { ethers } from "hardhat";
-import fs from 'fs';
-import path from 'path';
-import networks from '../app/networks';
+import fs from "fs";
+import path from "path";
+import networks from "../app/networks";
 import { defaultSettings } from "../test/utils/utils";
 
-const dataDir = 'data';
+const dataDir = "data";
 if (!fs.existsSync(dataDir)) {
   fs.mkdirSync(dataDir);
 }
@@ -16,7 +16,7 @@ async function main() {
 
   const [owner] = await ethers.getSigners();
 
-  const Randomizer = await ethers.getContractFactory("RandomizerTest", owner);
+  const Randomizer = await ethers.getContractFactory("RandomizerCustom", owner);
   const randomizer = await Randomizer.deploy();
   await randomizer.deployed();
 
@@ -31,11 +31,18 @@ owner: ${owner.address}
 lottery: ${lottery.address}
 randomizer: ${randomizer.address}
 `);
-  fs.writeFileSync(path.resolve(dataDir, filename), JSON.stringify({
-    owner: owner.address,
-    lottery: lottery.address,
-    randomizer: randomizer.address,
-  }, null, 2));
+  fs.writeFileSync(
+    path.resolve(dataDir, filename),
+    JSON.stringify(
+      {
+        owner: owner.address,
+        lottery: lottery.address,
+        randomizer: randomizer.address,
+      },
+      null,
+      2
+    )
+  );
 }
 
 main().catch((error) => {

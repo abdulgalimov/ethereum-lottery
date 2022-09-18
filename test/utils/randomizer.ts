@@ -1,6 +1,6 @@
 import { ethers } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { RandomizerTest, RandomizerChainlink } from "../../typechain-types";
+import { RandomizerCustom, RandomizerChainlink } from "../../typechain-types";
 
 export interface IRandomizerInfo {
     address: string,
@@ -67,8 +67,8 @@ async function createChainlinkRandomizer(user: SignerWithAddress): Promise<IRand
 }
 
 async function createTestRandomizer(user: SignerWithAddress) {
-    const Randomizer = await ethers.getContractFactory('RandomizerTest');
-    const randomizer: RandomizerTest = await Randomizer.deploy() as RandomizerTest;
+    const Randomizer = await ethers.getContractFactory('RandomizerCustom');
+    const randomizer: RandomizerCustom = await Randomizer.deploy() as RandomizerCustom;
     await randomizer.deployed()
 
     async function onInterval() {
