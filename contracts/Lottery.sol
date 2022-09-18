@@ -85,8 +85,7 @@ contract Lottery is Ownable {
         uint totalBalance = address(this).balance;
         require(totalBalance > msg.value, "empty balance");
 
-        uint beforeBalance = totalBalance - msg.value;
-        require(msg.value >= (beforeBalance * settings.minRate) / 100, "small bet");
+        require(msg.value >= ((totalBalance - msg.value) * settings.minRate) / 100, "small bet");
 
         require(currentValue == 0, "draw in progress");
 
@@ -102,6 +101,7 @@ contract Lottery is Ownable {
 
     function receiveRandom(uint randomUint) external {
         require(msg.sender == address(settings.randomizer), "randomizer only");
+        require(currentValue > 0 && currentSender != address(0), "wrong receive call");
         totalCount ++;
 
         uint totalBalance = address(this).balance;
@@ -153,6 +153,7 @@ contract Lottery is Ownable {
             }
         }
 
+        currentSender = address(0);
         currentValue = 0;
     }
 }

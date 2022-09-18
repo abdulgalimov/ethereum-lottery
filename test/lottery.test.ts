@@ -332,11 +332,7 @@ describe("Lottery", function () {
 
     await expectBalanceChange(receipt, winnerUser, winValue - attemptValue);
     await expectBalanceChange(receipt, owner, ownerValue);
-    await expectBalanceChange(
-      receipt,
-      randomizerUser,
-      [-123461280149325, -78620054876760]
-    );
+    await expectBalanceChange(receipt, randomizerUser, [-102718, -102718]);
     expectEvent(winEvent.args, {
       winAmount: winValue,
       count: 2,

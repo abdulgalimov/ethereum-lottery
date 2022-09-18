@@ -32,6 +32,11 @@ contract RandomizerChainlink is VRFConsumerBaseV2, IRandomizer, Ownable {
         s_subscriptionId = subscriptionId;
     }
 
+    function withdraw() external onlyOwner {
+        address payable ownerPay = payable(owner());
+        ownerPay.transfer(address(this).balance);
+    }
+
     function fulfillRandomWords(
         uint256,
         uint256[] memory randomWords
