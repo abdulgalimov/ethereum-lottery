@@ -241,6 +241,21 @@ describe("Lottery", function () {
     expect(await lottery.getBalance()).to.eq(startBalance + totalValue);
   });
 
+  it("[ok] attempt - receive", async function () {
+    await _addBalance(true, 200);
+    const user = getUser();
+    await (
+      await user.sendTransaction({
+        to: lottery.address,
+        value: 300,
+      })
+    ).wait();
+    await _readEvent("Try");
+
+    expect(await lottery.totalCount()).to.eq(1);
+    expect(await lottery.getBalance()).to.eq(500);
+  });
+
   it("[fail] attempt - no owner", async function () {
     await _addBalance(true, 200);
     expect(_attempt(false, 100, owner)).to.revertedWith("no owner");
