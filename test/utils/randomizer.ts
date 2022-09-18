@@ -3,14 +3,17 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { RandomizerCustom, RandomizerChainlink } from "../../typechain-types";
 
 export interface IRandomizerInfo<T> {
-  randomizer: T;
+  contract: T;
   address: string;
   setLottery(address: string): Promise<any>;
+  pause(isPause: boolean): void;
+  sendRandom(): Promise<any>;
   destroy(): void;
 }
 
 export async function createChainlinkRandomizer(
-  user: SignerWithAddress
+  user: SignerWithAddress,
+  name?: string
 ): Promise<IRandomizerInfo<RandomizerChainlink>> {
   const VRFCoordinatorV2Mock = await ethers.getContractFactory(
     "VRFCoordinatorV2Mock"
@@ -24,11 +27,18 @@ export async function createChainlinkRandomizer(
     transactionReceipt.events[0].topics[1]
   );
 
-  const Randomizer = await ethers.getContractFactory("RandomizerChainlink");
+  const Randomizer = await ethers.getContractFactory(
+    name || "RandomizerChainlink"
+  );
   const randomizer: RandomizerChainlink = (await Randomizer.connect(
     user
   ).deploy(subscriptionId, vrfMock.address)) as RandomizerChainlink;
   await randomizer.deployed();
+
+  async function sendRandom() {
+    const requestId = await randomizer.s_requestId();
+    return vrfMock.fulfillRandomWords(requestId, randomizer.address);
+  }
 
   let wait: boolean;
   async function onInterval() {
@@ -45,13 +55,21 @@ export async function createChainlinkRandomizer(
       wait = false;
     }
   }
-  const intervalId = setInterval(onInterval, 1000);
+  let intervalId = setInterval(onInterval, 1000);
 
   return {
-    randomizer,
+    contract: randomizer,
     address: randomizer.address,
     setLottery(lotteryAddress: string) {
       return randomizer.functions.setLottery(lotteryAddress);
+    },
+    sendRandom,
+    pause(isPause: boolean) {
+      if (isPause) {
+        clearInterval(intervalId);
+      } else {
+        intervalId = setInterval(onInterval, 1000);
+      }
     },
     destroy() {
       clearInterval(intervalId);
@@ -67,18 +85,30 @@ export async function createTestRandomizer(
     (await Randomizer.deploy()) as RandomizerCustom;
   await randomizer.deployed();
 
-  async function onInterval() {
+  async function sendRandom() {
     if (await randomizer.needRandom()) {
       await randomizer.connect(user).sendIfNeed();
     }
   }
-  const intervalId = setInterval(onInterval, 100);
+
+  async function onInterval() {
+    await sendRandom();
+  }
+  let intervalId = setInterval(onInterval, 100);
 
   return {
-    randomizer,
+    contract: randomizer,
     address: randomizer.address,
     setLottery(lotteryAddress: string) {
       return randomizer.functions.setLottery(lotteryAddress);
+    },
+    sendRandom,
+    pause(isPause: boolean) {
+      if (isPause) {
+        clearInterval(intervalId);
+      } else {
+        intervalId = setInterval(onInterval, 1000);
+      }
     },
     destroy() {
       clearInterval(intervalId);

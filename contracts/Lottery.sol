@@ -4,6 +4,7 @@ pragma solidity ^0.8.16;
 
 import "./IRandomizer.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/Address.sol";
 
 contract Lottery is Ownable {
     struct Settings {
@@ -27,6 +28,8 @@ contract Lottery is Ownable {
     uint private currentValue;
 
     constructor(Settings memory s) Ownable() {
+        require(Address.isContract(address(s.randomizer)), "Randomizer address is not contract");
+
         lotteryOwner = payable(msg.sender);
         settings.randomValue = s.randomValue;
         settings.minChance = s.minChance;
@@ -90,13 +93,10 @@ contract Lottery is Ownable {
         require(currentValue == 0, "draw in progress");
 
         (bool success, ) = address(settings.randomizer).call(abi.encodeWithSignature("getRandom()"));
+        require(success, "invalid call randomizer");
 
-        if (success) {
-            currentSender = msg.sender;
-            currentValue = msg.value;
-        } else {
-            revert("invalid call randomizer");
-        }
+        currentSender = msg.sender;
+        currentValue = msg.value;
     }
 
     function receiveRandom(uint randomUint) external {

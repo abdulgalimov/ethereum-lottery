@@ -2,7 +2,11 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber } from "ethers";
-import { LotteryTest, RandomizerChainlink } from "../typechain-types";
+import {
+  ChainlinkTest,
+  LotteryTest,
+  RandomizerChainlink,
+} from "../typechain-types";
 import { createChainlinkRandomizer, IRandomizerInfo } from "./utils/randomizer";
 import {
   createSettings,
@@ -273,6 +277,45 @@ describe("Lottery", function () {
     await _readEvent("Try");
   });
 
+  it("[ok] attempt - draw in progress", async function () {
+    await _addBalance(true, 200);
+    randomizer.pause(true);
+    await _attempt(true, 100);
+    await expect(_attempt(false, 500)).revertedWith("draw in progress");
+
+    expect(await lottery.totalCount()).to.eq(0);
+    expect(await lottery.getBalance()).to.eq(300);
+  });
+
+  it("[ok] attempt - invalid call randomizer", async function () {
+    const Lottery = await ethers.getContractFactory("LotteryTest");
+    const lotteryLocal = await Lottery.deploy(
+      createSettings({
+        randomizer: lottery.address,
+      })
+    );
+    await lotteryLocal.deployed();
+
+    await (
+      await lotteryLocal.addBalance({
+        value: 200,
+      })
+    ).wait();
+
+    await expect(
+      lotteryLocal.connect(getUser()).attempt({
+        value: 500,
+      })
+    ).revertedWith("invalid call randomizer");
+
+    expect(await lotteryLocal.totalCount()).to.eq(0);
+    expect(await lotteryLocal.getBalance()).to.eq(200);
+  });
+
+  it("[ok] receiveRandom - randomizer only", async function () {
+    await expect(lottery.receiveRandom(100)).revertedWith("randomizer only");
+  });
+
   it("[ok] stopped", async function () {
     await _addBalance(true);
     await _setTestSettings({ minChance: 0, maxChance: 0 });
@@ -332,7 +375,11 @@ describe("Lottery", function () {
 
     await expectBalanceChange(receipt, winnerUser, winValue - attemptValue);
     await expectBalanceChange(receipt, owner, ownerValue);
-    await expectBalanceChange(receipt, randomizerUser, [-102718, -102718]);
+    await expectBalanceChange(
+      receipt,
+      randomizerUser,
+      [-100640000805120, -102718]
+    );
     expectEvent(winEvent.args, {
       winAmount: winValue,
       count: 2,

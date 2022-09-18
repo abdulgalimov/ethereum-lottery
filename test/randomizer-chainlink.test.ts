@@ -14,7 +14,7 @@ describe("RandomizerChainlink", () => {
     signers = await ethers.getSigners();
     owner = signers.shift() as SignerWithAddress;
 
-    randomizerChainlink = (await createChainlinkRandomizer(owner)).randomizer;
+    randomizerChainlink = (await createChainlinkRandomizer(owner)).contract;
   });
 
   it("set lottery ok", async () => {
