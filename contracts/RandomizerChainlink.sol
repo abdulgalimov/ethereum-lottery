@@ -3,10 +3,12 @@ pragma solidity ^0.8.7;
 
 import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
+import "@openzeppelin/contracts/utils/Address.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "./IRandomizer.sol";
 import "./ILottery.sol";
 
-contract RandomizerChainlink is VRFConsumerBaseV2, IRandomizer {
+contract RandomizerChainlink is VRFConsumerBaseV2, IRandomizer, Ownable {
     VRFCoordinatorV2Interface COORDINATOR;
     uint64 s_subscriptionId;
     address vrfCoordinator;
@@ -21,14 +23,12 @@ contract RandomizerChainlink is VRFConsumerBaseV2, IRandomizer {
 
     uint256[] public s_randomWords;
     uint256 public s_requestId;
-    address s_owner;
 
     ILottery lottery;
 
-    constructor(uint64 subscriptionId, address _vrfCoordinator) VRFConsumerBaseV2(_vrfCoordinator) {
+    constructor(uint64 subscriptionId, address _vrfCoordinator) VRFConsumerBaseV2(_vrfCoordinator) Ownable() {
         vrfCoordinator = _vrfCoordinator;
         COORDINATOR = VRFCoordinatorV2Interface(vrfCoordinator);
-        s_owner = msg.sender;
         s_subscriptionId = subscriptionId;
     }
 
@@ -41,21 +41,14 @@ contract RandomizerChainlink is VRFConsumerBaseV2, IRandomizer {
         lottery.receiveRandom(randomWords[0]);
     }
 
-    modifier onlyOwner() {
-        require(msg.sender == s_owner);
-        _;
-    }
-
-    modifier lotteryOwner() {
-        require(msg.sender == address(lottery));
-        _;
-    }
-
     function setLottery(address _lottery) external onlyOwner {
+        require(Address.isContract(_lottery), "Address is not contract");
         lottery = ILottery(_lottery);
     }
 
-    function getRandom() external lotteryOwner returns(bool) {
+    function getRandom() external returns(bool) {
+        require(msg.sender == address(lottery), "Lottery only");
+
         s_requestId = COORDINATOR.requestRandomWords(
             keyHash,
             s_subscriptionId,

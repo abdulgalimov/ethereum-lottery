@@ -2,33 +2,16 @@ import { ethers } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { RandomizerCustom, RandomizerChainlink } from "../../typechain-types";
 
-export interface IRandomizerInfo {
+export interface IRandomizerInfo<T> {
+  randomizer: T;
   address: string;
   setLottery(address: string): Promise<any>;
   destroy(): void;
 }
 
-export enum RandomizerType {
-  TEST,
-  CHAINLINK,
-}
-
-export async function createRandomizer(
-  type: RandomizerType,
+export async function createChainlinkRandomizer(
   user: SignerWithAddress
-): Promise<IRandomizerInfo> {
-  switch (type) {
-    case RandomizerType.TEST:
-      return createTestRandomizer(user);
-    case RandomizerType.CHAINLINK:
-      return createChainlinkRandomizer(user);
-  }
-  throw new Error("Invalid type");
-}
-
-async function createChainlinkRandomizer(
-  user: SignerWithAddress
-): Promise<IRandomizerInfo> {
+): Promise<IRandomizerInfo<RandomizerChainlink>> {
   const VRFCoordinatorV2Mock = await ethers.getContractFactory(
     "VRFCoordinatorV2Mock"
   );
@@ -37,6 +20,7 @@ async function createChainlinkRandomizer(
   const transaction = await vrfMock.createSubscription();
   const transactionReceipt = await transaction.wait(1);
   const subscriptionId = ethers.BigNumber.from(
+    // @ts-ignore
     transactionReceipt.events[0].topics[1]
   );
 
@@ -64,6 +48,7 @@ async function createChainlinkRandomizer(
   const intervalId = setInterval(onInterval, 1000);
 
   return {
+    randomizer,
     address: randomizer.address,
     setLottery(lotteryAddress: string) {
       return randomizer.functions.setLottery(lotteryAddress);
@@ -74,7 +59,9 @@ async function createChainlinkRandomizer(
   };
 }
 
-async function createTestRandomizer(user: SignerWithAddress) {
+export async function createTestRandomizer(
+  user: SignerWithAddress
+): Promise<IRandomizerInfo<RandomizerCustom>> {
   const Randomizer = await ethers.getContractFactory("RandomizerCustom");
   const randomizer: RandomizerCustom =
     (await Randomizer.deploy()) as RandomizerCustom;
@@ -88,6 +75,7 @@ async function createTestRandomizer(user: SignerWithAddress) {
   const intervalId = setInterval(onInterval, 100);
 
   return {
+    randomizer,
     address: randomizer.address,
     setLottery(lotteryAddress: string) {
       return randomizer.functions.setLottery(lotteryAddress);

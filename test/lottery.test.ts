@@ -2,12 +2,8 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber } from "ethers";
-import { LotteryTest } from "../typechain-types";
-import {
-  createRandomizer,
-  IRandomizerInfo,
-  RandomizerType,
-} from "./utils/randomizer";
+import { LotteryTest, RandomizerChainlink } from "../typechain-types";
+import { createChainlinkRandomizer, IRandomizerInfo } from "./utils/randomizer";
 import {
   createSettings,
   defaultBalance,
@@ -29,7 +25,7 @@ describe("Lottery", function () {
   let signers: SignerWithAddress[];
   let randomizerUser: SignerWithAddress;
   let lottery: LotteryTest;
-  let randomizer: IRandomizerInfo;
+  let randomizer: IRandomizerInfo<RandomizerChainlink>;
 
   let userIndex = 0;
   function getUser(): SignerWithAddress {
@@ -104,10 +100,7 @@ describe("Lottery", function () {
     owner = signers.shift() as SignerWithAddress;
     randomizerUser = signers.shift() as SignerWithAddress;
 
-    randomizer = await createRandomizer(
-      RandomizerType.CHAINLINK,
-      randomizerUser
-    );
+    randomizer = await createChainlinkRandomizer(randomizerUser);
     defaultSettings.randomizer = randomizer.address;
 
     const Lottery = await ethers.getContractFactory("LotteryTest");
@@ -361,12 +354,6 @@ describe.skip("test algorithm", function () {
   const users: Array<BigNumber> = [];
   const maxValue = ethers.utils.parseEther("0.1");
   for (let i = 0; i < 1000; i++) users.push(toWei(2));
-  function formatUsers() {
-    console.log("format users: ");
-    users.forEach((value, index) =>
-      console.log(`${index}:`, ethers.utils.formatEther(value))
-    );
-  }
 
   function getRandomUser() {
     return Math.floor(Math.random() * users.length);

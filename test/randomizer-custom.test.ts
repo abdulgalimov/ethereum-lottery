@@ -3,6 +3,7 @@ import { ethers } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { RandomizerCustom } from "../typechain-types";
 import { createLottery } from "./utils/utils";
+import { createTestRandomizer } from "./utils/randomizer";
 
 describe("RandomizerCustom", () => {
   let signers: SignerWithAddress[];
@@ -13,11 +14,7 @@ describe("RandomizerCustom", () => {
     signers = await ethers.getSigners();
     owner = signers.shift() as SignerWithAddress;
 
-    const RandomizerFactory = await ethers.getContractFactory(
-      "RandomizerCustom"
-    );
-    randomizerCustom = await RandomizerFactory.deploy();
-    await randomizerCustom.deployed();
+    randomizerCustom = (await createTestRandomizer(owner)).randomizer;
   });
 
   it("set lottery ok", async () => {

@@ -5,8 +5,9 @@ pragma solidity ^0.8.16;
 import "./ILottery.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
+import "./IRandomizer.sol";
 
-contract RandomizerCustom is Ownable {
+contract RandomizerCustom is Ownable, IRandomizer {
     bool public needRandom;
     ILottery lottery;
 
