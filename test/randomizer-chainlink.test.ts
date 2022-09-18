@@ -40,7 +40,7 @@ describe("RandomizerChainlink", () => {
     await expect(randomizerChainlink.getRandom()).revertedWith("Lottery only");
   });
 
-  it.only("pay-withdraw", async () => {
+  it("pay-withdraw", async () => {
     await expect(
       owner.sendTransaction({
         value: 100,
