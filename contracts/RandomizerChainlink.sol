@@ -36,6 +36,7 @@ contract RandomizerChainlink is VRFConsumerBaseV2, IRandomizer, Ownable {
         address payable ownerPay = payable(owner());
         ownerPay.transfer(address(this).balance);
     }
+    receive() external payable {}
 
     function fulfillRandomWords(
         uint256,

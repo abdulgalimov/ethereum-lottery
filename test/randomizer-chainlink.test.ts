@@ -39,4 +39,18 @@ describe("RandomizerChainlink", () => {
   it("get random fail", async () => {
     await expect(randomizerChainlink.getRandom()).revertedWith("Lottery only");
   });
+
+  it.only("pay-withdraw", async () => {
+    await expect(
+      owner.sendTransaction({
+        value: 100,
+        to: randomizerChainlink.address,
+      })
+    ).to.changeEtherBalances([owner, randomizerChainlink], [-100, 100]);
+
+    await expect(randomizerChainlink.withdraw()).to.changeEtherBalances(
+      [owner, randomizerChainlink],
+      [100, -100]
+    );
+  });
 });

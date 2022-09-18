@@ -15,6 +15,7 @@ contract RandomizerCustom is Ownable, IRandomizer {
         address payable ownerPay = payable(owner());
         ownerPay.transfer(address(this).balance);
     }
+    receive() external payable {}
 
     function _sendRandom() private {
         uint rnd = uint(
@@ -47,10 +48,4 @@ contract RandomizerCustom is Ownable, IRandomizer {
             needRandom = false;
         }
     }
-
-    function sendForce() external {
-        _sendRandom();
-    }
-
-    receive() external payable {}
 }

@@ -1,14 +1,14 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { RandomizerCustom } from "../typechain-types";
+import { RandomizerCustomTest } from "../typechain-types";
 import { createLottery } from "./utils/utils";
 import { createTestRandomizer } from "./utils/randomizer";
 
 describe("RandomizerCustom", () => {
   let signers: SignerWithAddress[];
   let owner: SignerWithAddress;
-  let randomizerCustom: RandomizerCustom;
+  let randomizerCustom: RandomizerCustomTest;
 
   beforeEach(async () => {
     signers = await ethers.getSigners();
@@ -43,8 +43,22 @@ describe("RandomizerCustom", () => {
   it("receiveRandom - wrong receive call", async () => {
     const lottery = await createLottery(randomizerCustom.address);
     await (await randomizerCustom.setLottery(lottery.address)).wait();
-    await expect(randomizerCustom.sendForce()).revertedWith(
+    await expect(randomizerCustom.sendRandomTest()).revertedWith(
       "wrong receive call"
+    );
+  });
+
+  it("pay-withdraw", async () => {
+    await expect(
+      owner.sendTransaction({
+        value: 100,
+        to: randomizerCustom.address,
+      })
+    ).to.changeEtherBalances([owner, randomizerCustom], [-100, 100]);
+
+    await expect(randomizerCustom.withdraw()).to.changeEtherBalances(
+      [owner, randomizerCustom],
+      [100, -100]
     );
   });
 });
