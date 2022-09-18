@@ -104,7 +104,10 @@ describe("Lottery", function () {
     owner = signers.shift() as SignerWithAddress;
     randomizerUser = signers.shift() as SignerWithAddress;
 
-    randomizer = await createRandomizer(RandomizerType.TEST, randomizerUser);
+    randomizer = await createRandomizer(
+      RandomizerType.CHAINLINK,
+      randomizerUser
+    );
     defaultSettings.randomizer = randomizer.address;
 
     const Lottery = await ethers.getContractFactory("LotteryTest");

@@ -33,7 +33,7 @@ contract RandomizerChainlink is VRFConsumerBaseV2, IRandomizer {
     }
 
     function fulfillRandomWords(
-        uint256 requestId,
+        uint256,
         uint256[] memory randomWords
     ) internal override {
         s_randomWords = randomWords;

@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { RandomizerChainlink, RandomizerCustom } from "../typechain-types";
+import { RandomizerChainlink } from "../typechain-types";
 import { createLottery } from "./utils/utils";
 
 describe("RandomizerChainlink", () => {
@@ -13,10 +13,24 @@ describe("RandomizerChainlink", () => {
     signers = await ethers.getSigners();
     owner = signers.shift() as SignerWithAddress;
 
+    const VRFCoordinatorV2Mock = await ethers.getContractFactory(
+      "VRFCoordinatorV2Mock"
+    );
+    const vrfMock = await VRFCoordinatorV2Mock.connect(owner).deploy(0, 0);
+    await vrfMock.deployed();
+    const transaction = await vrfMock.createSubscription();
+    const transactionReceipt = await transaction.wait(1);
+    const subscriptionId = ethers.BigNumber.from(
+      transactionReceipt.events[0].topics[1]
+    );
+
     const RandomizerFactory = await ethers.getContractFactory(
       "RandomizerChainlink"
     );
-    randomizerChainlink = await RandomizerFactory.deploy(0, "");
+    randomizerChainlink = await RandomizerFactory.deploy(
+      subscriptionId,
+      vrfMock.address
+    );
     await randomizerChainlink.deployed();
   });
 
