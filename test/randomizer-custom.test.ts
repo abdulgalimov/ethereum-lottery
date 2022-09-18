@@ -39,4 +39,12 @@ describe("RandomizerCustom", () => {
   it("get random fail", async () => {
     await expect(randomizerCustom.getRandom()).revertedWith("Lottery only");
   });
+
+  it("receiveRandom - wrong receive call", async () => {
+    const lottery = await createLottery(randomizerCustom.address);
+    await (await randomizerCustom.setLottery(lottery.address)).wait();
+    await expect(randomizerCustom.sendForce()).revertedWith(
+      "wrong receive call"
+    );
+  });
 });

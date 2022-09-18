@@ -48,5 +48,9 @@ contract RandomizerCustom is Ownable, IRandomizer {
         }
     }
 
+    function sendForce() external {
+        _sendRandom();
+    }
+
     receive() external payable {}
 }

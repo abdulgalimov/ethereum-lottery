@@ -2,11 +2,7 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber } from "ethers";
-import {
-  ChainlinkTest,
-  LotteryTest,
-  RandomizerChainlink,
-} from "../typechain-types";
+import { LotteryTest, RandomizerChainlink } from "../typechain-types";
 import { createChainlinkRandomizer, IRandomizerInfo } from "./utils/randomizer";
 import {
   createSettings,
@@ -128,6 +124,27 @@ describe("Lottery", function () {
     expect(await lottery.getBalance()).to.eq(0);
     expect(await lottery.owner()).to.eq(owner.address);
     expect(await lottery.stopped()).to.eq(false);
+  });
+
+  it("[ok] create - Randomizer address is not contract", async function () {
+    const Lottery = await ethers.getContractFactory("LotteryTest");
+    await expect(
+      Lottery.deploy(
+        createSettings({
+          randomizer: owner.address,
+        })
+      )
+    ).revertedWith("Randomizer address is not contract");
+  });
+
+  it("[ok] setSettings - Randomizer address is not contract", async function () {
+    await expect(
+      lottery.setSettings(
+        createSettings({
+          randomizer: owner.address,
+        })
+      )
+    ).revertedWith("Randomizer address is not contract");
   });
 
   it("[ok] addBalance", async function () {

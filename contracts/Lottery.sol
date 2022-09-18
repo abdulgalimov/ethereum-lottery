@@ -57,6 +57,8 @@ contract Lottery is Ownable {
     }
 
     function setSettings(Settings calldata updateSettings) external onlyOwner {
+        require(Address.isContract(address(updateSettings.randomizer)), "Randomizer address is not contract");
+
         newSettings.randomValue = updateSettings.randomValue;
         newSettings.minChance = updateSettings.minChance;
         newSettings.maxChance = updateSettings.maxChance;
