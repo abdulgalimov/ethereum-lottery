@@ -1,11 +1,15 @@
 {
   "scripts": {
-    "build:app": "tsc --project app/tsconfig.json",
-    "start:app": "npm run build:app && NETWORK=localhost node dist/app.js",
     "dev:app": "nodemon --watch \"app/**\" --ext \"ts,json\" --ignore \"app/**/*.spec.ts\" --exec \"ts-node app/app.ts\"",
+
+    "compile": "npx hardhat compile",
+    "build:artifacts": "mkdir -p ./dist/artifacts/contracts && cp -r artifacts/contracts ./dist/artifacts/ ",
+    "build:app": "tsc --project app/tsconfig.json",
+    "build": "npm run compile && npm run build:artifacts && npm run build:app",
+    "start:app": "npm run build:app && NETWORK=localhost node dist/app.js",
+
     "deploy:localhost": "npx hardhat run scripts/deploy.ts --network localhost",
-    "test": "npx hardhat test",
-    "compile": "npx hardhat compile"
+    "test": "npx hardhat test"
   },
   "name": "hardhat-project",
   "devDependencies": {

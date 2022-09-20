@@ -1,6 +1,6 @@
 import { ethers, Contract } from "ethers";
 import { WebSocketProvider } from "@ethersproject/providers";
-import { NetworkInfo, NetworkType } from "../networks";
+import { DeployData, NetworkInfo, NetworkType } from "../networks";
 import path from "path";
 import fs from "fs";
 import * as process from "process";
@@ -9,44 +9,36 @@ import { EventData, Settings } from "./types";
 type Callback = (...args: any[]) => {};
 
 let callback: Callback;
-let ownerAddress: string;
-let ownerKey: string;
-let lotteryAddress: string;
-let randomizerAddress: string;
-
-const baseDataPath = "../../data";
 
 let provider: WebSocketProvider;
 
 export async function init(_network: NetworkInfo, _callback: Callback) {
   callback = _callback;
 
-  const { type, providerUrl, filename } = _network;
+  const { type, providerUrl, deployData } = _network;
 
   provider = new ethers.providers.WebSocketProvider(providerUrl);
 
-  const LotteryInfo = require(`${baseDataPath}/${filename}`);
-  ownerAddress = LotteryInfo.owner;
-  ownerKey = LotteryInfo.privateKey;
-  lotteryAddress = LotteryInfo.lottery;
-  randomizerAddress = LotteryInfo.randomizer;
-
   switch (type) {
     case NetworkType.localhost:
-      await connectToLottery("LotteryTest", "test/");
-      await connectToRandomizer();
+      await connectToLottery(deployData, "LotteryTest", "test/");
+      await connectToRandomizer(deployData);
+      break;
+    case NetworkType.goerli:
+      await connectToLottery(deployData, "LotteryTest", "test/");
       break;
   }
 }
 
 function readArtifact(name: string, filepath: string = "") {
+  const appDir = path.dirname(require.main?.filename as string);
   const artifactPath = path.resolve(
-    __dirname,
-    "../..",
+    appDir,
+    "../",
     `artifacts/contracts/${filepath}${name}.sol/${name}.json`
   );
   if (!fs.existsSync(artifactPath)) {
-    console.log(`Artifact ${name} not found`);
+    console.log(`Artifact ${artifactPath} not found`);
     process.exit(1);
   }
   return JSON.parse(fs.readFileSync(artifactPath).toString());
@@ -60,13 +52,17 @@ let settings: Settings;
 export function getSettings(): Settings {
   return settings;
 }
-async function connectToLottery(name: string, filepath?: string) {
-  await existContract(lotteryAddress);
+async function connectToLottery(
+  deployData: DeployData,
+  name: string,
+  filepath?: string
+) {
+  await existContract(deployData.lotteryAddress);
 
   const LotteryArtifacts = readArtifact(name, filepath);
 
   const lotteryContract = new ethers.Contract(
-    lotteryAddress,
+    deployData.lotteryAddress,
     LotteryArtifacts.abi,
     provider
   );
@@ -117,22 +113,22 @@ async function readSettings(lotteryContract: Contract): Promise<Settings> {
   };
 }
 
-async function connectToRandomizer() {
-  await existContract(lotteryAddress);
+async function connectToRandomizer(deployData: DeployData) {
+  await existContract(deployData.lotteryAddress);
 
   const RandomizerArtifacts = readArtifact("RandomizerCustom");
 
-  const wallet = new ethers.Wallet(ownerKey, provider);
+  const wallet = new ethers.Wallet(deployData.ownerKey as string, provider);
 
   const randomizerContract = new ethers.Contract(
-    randomizerAddress,
+    deployData.randomizerAddress,
     RandomizerArtifacts.abi,
     wallet
   );
 
   async function sendToRandomizer() {
     const options = {
-      from: ownerAddress,
+      from: deployData.ownerAddress,
     };
     try {
       const need = (await randomizerContract.functions.needRandom(options))[0];

@@ -26,12 +26,12 @@ export async function start(
 const addMessageTemplate = `
 ➕ Add amount: $addAmount
 💰 Total balance: $totalAmount
-💲 Min rate: $minRate`;
+💲 Min bet: $minRate`;
 const tryMessageTemplate = `
 🎲 New game: $tryAmount
 🔢 Count: $count
 💰 Total balance: $totalAmount
-💲 Min rate: $minRate`;
+💲 Min bet: $minRate`;
 const winMessageTemplate = `
 🎉 #Win
 💰 Total balance: $totalAmount;
