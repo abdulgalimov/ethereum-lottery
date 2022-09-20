@@ -1,7 +1,7 @@
 import { Telegraf } from "telegraf";
-import Web3 from "web3";
+import { ethers } from "ethers";
 import { NetworkInfo } from "../networks";
-import { EventData, Settings } from "../contract/types";
+import { EventData, Events, Settings } from "../contract/types";
 import {
   AddEventObject,
   TryEventObject,
@@ -23,27 +23,38 @@ export async function start(
   bot = new Telegraf(TELEGRAM_TOKEN as string);
 }
 
+const addMessageTemplate = `
+➕ Add amount: $addAmount
+💰 Total balance: $totalAmount
+💲 Min rate: $minRate`;
 const tryMessageTemplate = `
-➕ Add amount: $tryAmount
+🎲 New game: $tryAmount
 🔢 Count: $count
-💰 Total balance: $totalAmount`;
+💰 Total balance: $totalAmount
+💲 Min rate: $minRate`;
 const winMessageTemplate = `
 🎉 #Win
 💰 Total balance: $totalAmount;
 `;
 
-export function notifyEvent(name: string, eventData: EventData) {
-  console.log("[event]", name, eventData);
+export function notifyEvent(eventData: EventData) {
+  console.log("[event]", eventData);
   let message: string = "";
-  switch (name) {
-    case "try":
+  switch (eventData.name) {
+    case Events.Add:
+      const addEvent = eventData.data as AddEventObject;
+      message = addMessageTemplate
+        .replace("addAmount", formatAmount(addEvent.addAmount))
+        .replace("$totalAmount", formatAmount(eventData.currentBalance));
+      break;
+    case Events.Try:
       const tryEvent = eventData.data as TryEventObject;
       message = tryMessageTemplate
         .replace("$tryAmount", formatAmount(tryEvent.tryAmount))
         .replace("$count", tryEvent.count.toString())
         .replace("$totalAmount", formatAmount(tryEvent.totalAmount));
       break;
-    case "win":
+    case Events.Win:
       const winEvent = eventData.data as WinEventObject;
       message = winMessageTemplate.replace(
         "$totalAmount",
@@ -54,6 +65,11 @@ export function notifyEvent(name: string, eventData: EventData) {
 
   const scanUrl = network.scanUrl.replace("$hash", eventData.transactionHash);
   if (message) {
+    const minRate = eventData.currentBalance
+      .mul(contractSettings.minRate)
+      .div(100);
+    message = message.replace("$minRate", formatAmount(minRate));
+
     message = `${message}
 <a href="${scanUrl}">⤴️ View on scan</a>`;
     return bot.telegram.sendMessage(TELEGRAM_CHANNEL_ID as string, message, {
@@ -64,5 +80,5 @@ export function notifyEvent(name: string, eventData: EventData) {
 }
 
 function formatAmount(amount: any): string {
-  return Web3.utils.fromWei(amount, "ether") + " ETH";
+  return ethers.utils.formatEther(amount) + " ETH";
 }

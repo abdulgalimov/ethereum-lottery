@@ -15,7 +15,14 @@ export interface Settings {
   randomizer: string;
 }
 
+export enum Events {
+  Add = "Add",
+  Try = "Try",
+  Win = "Win",
+}
+
 export interface EventData {
+  name: Events;
   transactionHash: string;
   currentBalance: BigNumber;
   data: AddEventObject | TryEventObject | WinEventObject;

@@ -17,8 +17,8 @@ async function main() {
   await startBot(network, getContractSettings());
 }
 
-async function onEvent(name: string, eventData: EventData) {
-  return notifyEvent(name, eventData);
+async function onEvent(eventData: EventData) {
+  return notifyEvent(eventData);
 }
 
 main();

@@ -1,30 +1,33 @@
-import Web3 from "web3";
-import { Contract } from "web3-eth-contract";
+import { ethers, Contract } from "ethers";
+import { WebSocketProvider } from "@ethersproject/providers";
 import { NetworkInfo, NetworkType } from "../networks";
 import path from "path";
 import fs from "fs";
 import * as process from "process";
 import { EventData, Settings } from "./types";
 
-type Callback = (name: string, ...args: any[]) => {};
+type Callback = (...args: any[]) => {};
 
-let web3: Web3;
 let callback: Callback;
 let ownerAddress: string;
+let ownerKey: string;
 let lotteryAddress: string;
 let randomizerAddress: string;
 
 const baseDataPath = "../../data";
+
+let provider: WebSocketProvider;
 
 export async function init(_network: NetworkInfo, _callback: Callback) {
   callback = _callback;
 
   const { type, providerUrl, filename } = _network;
 
-  web3 = new Web3(providerUrl);
+  provider = new ethers.providers.WebSocketProvider(providerUrl);
 
   const LotteryInfo = require(`${baseDataPath}/${filename}`);
   ownerAddress = LotteryInfo.owner;
+  ownerKey = LotteryInfo.privateKey;
   lotteryAddress = LotteryInfo.lottery;
   randomizerAddress = LotteryInfo.randomizer;
 
@@ -50,11 +53,7 @@ function readArtifact(name: string, filepath: string = "") {
 }
 
 async function existContract(address: string) {
-  const code = await web3.eth.getCode(address);
-  const exists = code !== "0x";
-  if (!exists) {
-    throw new Error(`Lottery contract not found in address: ${lotteryAddress}`);
-  }
+  return true;
 }
 
 let settings: Settings;
@@ -66,47 +65,47 @@ async function connectToLottery(name: string, filepath?: string) {
 
   const LotteryArtifacts = readArtifact(name, filepath);
 
-  const lotteryContract = new web3.eth.Contract(
+  const lotteryContract = new ethers.Contract(
+    lotteryAddress,
     LotteryArtifacts.abi,
-    lotteryAddress
+    provider
   );
 
   settings = await readSettings(lotteryContract);
 
-  lotteryContract.events.TestEvent().on("data", async function (event: any) {
+  lotteryContract.on("TestEvent", async function (event: any) {
     console.log("TestEvent", event);
   });
 
   async function getEventData(event: any): Promise<EventData> {
     return {
+      name: event.event,
       transactionHash: event.transactionHash,
-      currentBalance: await lotteryContract.methods.getBalance().call(),
-      data: event.returnValues,
+      currentBalance: (await lotteryContract.functions.getBalance())[0],
+      data: event.args,
     };
   }
 
-  lotteryContract.events.Add().on("data", async function (event: any) {
-    callback("add", await getEventData(event));
+  lotteryContract.on("Add", async function (event: any) {
+    callback(await getEventData(arguments[arguments.length - 1]));
   });
 
-  lotteryContract.events.Try().on("data", async function (event: any) {
-    callback("try", await getEventData(event));
+  lotteryContract.on("Try", async function (event: any) {
+    callback(await getEventData(arguments[arguments.length - 1]));
   });
 
-  lotteryContract.events.Win().on("data", async function (event: any) {
-    callback("win", await getEventData(event));
+  lotteryContract.on("Win", async function (event: any) {
+    callback(await getEventData(arguments[arguments.length - 1]));
   });
 
-  lotteryContract.events
-    .SettingsChanged()
-    .on("data", async function (event: any) {
-      const { settings } = event.returnValues;
-      console.log("[change settings]", settings);
-    });
+  lotteryContract.on("SettingsChanged", async function (event: any) {
+    const { settings } = event.returnValues;
+    console.log("[change settings]", settings);
+  });
 }
 
 async function readSettings(lotteryContract: Contract): Promise<Settings> {
-  const settings: Settings = await lotteryContract.methods.settings().call();
+  const settings: Settings = await lotteryContract.functions.settings();
   return {
     randomValue: +settings.randomValue,
     minChance: +settings.minChance,
@@ -123,9 +122,12 @@ async function connectToRandomizer() {
 
   const RandomizerArtifacts = readArtifact("RandomizerCustom");
 
-  const randomizerContract = new web3.eth.Contract(
+  const wallet = new ethers.Wallet(ownerKey, provider);
+
+  const randomizerContract = new ethers.Contract(
+    randomizerAddress,
     RandomizerArtifacts.abi,
-    randomizerAddress
+    wallet
   );
 
   async function sendToRandomizer() {
@@ -133,13 +135,9 @@ async function connectToRandomizer() {
       from: ownerAddress,
     };
     try {
-      const need = await (
-        await randomizerContract.methods.needRandom()
-      ).call(options);
-      if (need) {
-        console.log("send need");
-        const res = await randomizerContract.methods.sendIfNeed();
-        await res.send(options);
+      const need = (await randomizerContract.functions.needRandom(options))[0];
+      if (need || 1) {
+        await (await randomizerContract.functions.sendIfNeed()).wait();
       }
     } catch (err) {
       console.log("err", err);
