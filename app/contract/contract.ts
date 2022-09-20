@@ -133,7 +133,7 @@ async function connectToRandomizer(deployData: DeployData) {
     };
     try {
       const need = (await randomizerContract.functions.needRandom(options))[0];
-      if (need || 1) {
+      if (need) {
         await (await randomizerContract.functions.sendIfNeed()).wait();
       }
     } catch (err) {
