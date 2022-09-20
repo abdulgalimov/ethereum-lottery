@@ -12,11 +12,11 @@ import {
   expectBalanceChange,
   expectEvent,
   getMinValue,
-  Settings,
   toWei,
   UpdateSettings,
 } from "./utils/utils";
 import { onlyOwnerMessage } from "./utils/constants";
+import { Settings } from "../app/contract/types";
 
 describe("Lottery", function () {
   this.timeout(60000);

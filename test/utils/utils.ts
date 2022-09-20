@@ -3,16 +3,8 @@ import { expect } from "chai";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber } from "ethers";
 import { LotteryTest } from "../../typechain-types";
+import { Settings } from "../../app/contract/types";
 
-export interface Settings {
-  randomValue: number;
-  minChance: number;
-  maxChance: number;
-  winRate: number;
-  feeRate: number;
-  minRate: number;
-  randomizer: string;
-}
 export interface UpdateSettings {
   randomValue?: number;
   minChance?: number;

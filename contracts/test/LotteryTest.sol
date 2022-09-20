@@ -9,6 +9,8 @@ contract LotteryTest is Lottery {
     constructor(Settings memory settings) Lottery(settings) {
     }
 
+    event TestEvent(uint256 num);
+
     function setTestSettings(Settings calldata updateSettings) external onlyOwner {
         settings.randomValue = updateSettings.randomValue;
         settings.minChance = updateSettings.minChance;
@@ -24,9 +26,10 @@ contract LotteryTest is Lottery {
     uint test = 0;
     function testUpdate() external {
         test++;
+        emit TestEvent(test);
     }
 
-    function requestRandom() external {
+    function requestRandom() external onlyOwner {
         settings.randomizer.getRandom();
     }
 }

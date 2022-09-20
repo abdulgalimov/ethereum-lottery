@@ -4,9 +4,8 @@
     "start:app": "npm run build:app && NETWORK=localhost node dist/app.js",
     "dev:app": "nodemon --watch \"app/**\" --ext \"ts,json\" --ignore \"app/**/*.spec.ts\" --exec \"ts-node app/app.ts\"",
     "deploy:localhost": "npx hardhat run scripts/deploy.ts --network localhost",
-    "deploy:goerli": "npx hardhat run scripts/deploy.ts --network goerli",
-    "deploy:mainnet": "npx hardhat run scripts/deploy.ts --network mainnet",
-    "test": "npx hardhat test"
+    "test": "npx hardhat test",
+    "compile": "npx hardhat compile"
   },
   "name": "hardhat-project",
   "devDependencies": {

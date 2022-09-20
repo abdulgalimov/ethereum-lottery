@@ -1,12 +1,12 @@
-require('dotenv').config();
+require("dotenv").config();
 
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
 
 const {
-  GOERLI_API_URL,
-  ALCHEMY_API_URL,
-  ALCHEMY_API_KEY,
+  GOERLI_ALCHEMY_API_URL,
+  GOERLI_METAMASK_PRIVATE_KEY,
+  MAINNET_ALCHEMY_API_URL,
   METAMASK_PRIVATE_KEY,
 } = process.env;
 
@@ -15,13 +15,13 @@ const config: HardhatUserConfig = {
   networks: {
     hardhat: {},
     goerli: {
-      url: `https://${GOERLI_API_URL}/${ALCHEMY_API_KEY}`,
-      accounts: [`0x${METAMASK_PRIVATE_KEY}`]
+      url: `${GOERLI_ALCHEMY_API_URL}`,
+      accounts: [`0x${GOERLI_METAMASK_PRIVATE_KEY}`],
     },
     mainnet: {
-      url: `https://${ALCHEMY_API_URL}/${ALCHEMY_API_KEY}`,
-      accounts: [`0x${METAMASK_PRIVATE_KEY}`]
-    }
+      url: `${MAINNET_ALCHEMY_API_URL}`,
+      accounts: [`0x${METAMASK_PRIVATE_KEY}`],
+    },
   },
 };
 

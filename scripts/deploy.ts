@@ -2,9 +2,10 @@ import { ethers } from "hardhat";
 import fs from "fs";
 import path from "path";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import networks from "../app/networks";
+import networks, { NetworkType } from "../app/networks";
 import { createSettings } from "../test/utils/utils";
 import { IRandomizer, Lottery } from "../typechain-types";
+import * as process from "process";
 
 const { HARDHAT_NETWORK } = process.env;
 
@@ -29,7 +30,7 @@ async function deployLottery(
   owner: SignerWithAddress,
   randomizer: IRandomizer
 ): Promise<Lottery> {
-  const LotteryFactory = await ethers.getContractFactory("Lottery", owner);
+  const LotteryFactory = await ethers.getContractFactory("LotteryTest", owner);
   const lottery = await LotteryFactory.deploy(
     createSettings({
       randomizer: randomizer.address,
@@ -45,10 +46,9 @@ async function deployLottery(
 function saveOut(
   owner: SignerWithAddress,
   lottery: Lottery,
-  randomizer: IRandomizer
+  randomizer: IRandomizer,
+  filename: string
 ) {
-  const { filename } = networks(HARDHAT_NETWORK);
-
   console.log(`Deployed:
   owner: ${owner.address}
   lottery: ${lottery.address}
@@ -72,16 +72,22 @@ function saveOut(
 }
 
 async function main() {
+  const { filename, type } = networks(HARDHAT_NETWORK);
+  if (type !== NetworkType.localhost) {
+    console.log("deploy to localhost only");
+    process.exit(1);
+  }
+
   const [owner] = await ethers.getSigners();
 
   const randomizerCustom = await deployCustomRandomizer(owner);
 
   const lottery = await deployLottery(owner, randomizerCustom);
 
-  saveOut(owner, lottery, randomizerCustom);
+  saveOut(owner, lottery, randomizerCustom, filename);
 }
 
 main().catch((error) => {
   console.error(error);
-  process.exitCode = 1;
+  process.exit(2);
 });
