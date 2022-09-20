@@ -26,6 +26,7 @@ export async function init(_network: NetworkInfo, _callback: Callback) {
       break;
     case NetworkType.goerli:
       await connectToLottery(deployData, "LotteryTest", "test/");
+      await connectToRandomizer(deployData);
       break;
   }
 }

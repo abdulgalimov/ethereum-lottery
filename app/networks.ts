@@ -7,6 +7,8 @@ const {
   GOERLI_RANDOMIZER_ADDRESS,
   GOERLI_OWNER_ADDRESS,
 
+  METAMASK_PRIVATE_KEY,
+
   MAINNET_OWNER_ADDRESS,
   MAINNET_ALCHEMY_API_URL,
   MAINNET_LOTTERY_ADDRESS,
@@ -67,6 +69,7 @@ export default function getInfo(
         scanUrl: GOERLI_SCAN as string,
         deployData: {
           ownerAddress: GOERLI_OWNER_ADDRESS as string,
+          ownerKey: METAMASK_PRIVATE_KEY,
           lotteryAddress: GOERLI_LOTTERY_ADDRESS as string,
           randomizerAddress: GOERLI_RANDOMIZER_ADDRESS as string,
         },
