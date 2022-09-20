@@ -127,7 +127,11 @@ async function connectToRandomizer(deployData: DeployData) {
     wallet
   );
 
+  let inProgress: boolean = false;
   async function sendToRandomizer() {
+    if (inProgress) return;
+    inProgress = true;
+
     const options = {
       from: deployData.ownerAddress,
     };
@@ -137,7 +141,9 @@ async function connectToRandomizer(deployData: DeployData) {
         await (await randomizerContract.functions.sendIfNeed()).wait();
       }
     } catch (err) {
-      console.log("err", err);
+      console.log("sendToRandomizer error:", err);
+    } finally {
+      inProgress = false;
     }
   }
 
