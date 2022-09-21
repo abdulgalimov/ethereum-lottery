@@ -46,7 +46,8 @@ contract Lottery is Ownable {
     }
 
     event Add(uint addAmount);
-    event Try(uint tryAmount, uint count, uint totalAmount, bool isWin);
+    event TryStart(uint tryAmount, uint count, uint totalAmount);
+    event TryFinish(uint tryAmount, uint count, uint totalAmount, bool isWin);
     event Win(uint winAmount, uint count);
     event SettingsChanged(Settings settings);
 
@@ -97,14 +98,15 @@ contract Lottery is Ownable {
         (bool success, ) = address(settings.randomizer).call(abi.encodeWithSignature("getRandom()"));
         require(success, "invalid call randomizer");
 
+        totalCount++;
         currentSender = msg.sender;
         currentValue = msg.value;
+        emit TryStart(currentValue, totalCount, totalBalance);
     }
 
     function receiveRandom(uint randomUint) external {
         require(msg.sender == address(settings.randomizer), "randomizer only");
         require(currentValue > 0 && currentSender != address(0), "wrong receive call");
-        totalCount ++;
 
         uint totalBalance = address(this).balance;
         uint beforeBalance = totalBalance - currentValue;
@@ -116,7 +118,7 @@ contract Lottery is Ownable {
 
         uint rnd = randomUint % settings.randomValue;
         bool isWin = rnd <= chance;
-        emit Try(currentValue, totalCount, totalBalance, isWin);
+        emit TryFinish(currentValue, totalCount, totalBalance, isWin);
 
         if (isWin) {
             uint winAmount = (totalBalance * settings.winRate) / 100;

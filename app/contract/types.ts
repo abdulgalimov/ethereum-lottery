@@ -1,7 +1,8 @@
 import { BigNumber } from "ethers";
 import {
   AddEventObject,
-  TryEventObject,
+  TryFinishEventObject,
+  TryStartEventObject,
   WinEventObject,
 } from "../../typechain-types/contracts/Lottery";
 
@@ -17,7 +18,8 @@ export interface Settings {
 
 export enum Events {
   Add = "Add",
-  Try = "Try",
+  TryStart = "TryStart",
+  TryFinish = "TryFinish",
   Win = "Win",
 }
 
@@ -25,5 +27,9 @@ export interface EventData {
   name: Events;
   transactionHash: string;
   currentBalance: BigNumber;
-  data: AddEventObject | TryEventObject | WinEventObject;
+  data:
+    | AddEventObject
+    | TryStartEventObject
+    | TryFinishEventObject
+    | WinEventObject;
 }

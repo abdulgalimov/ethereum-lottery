@@ -190,7 +190,7 @@ describe("Lottery", function () {
      * in sol file
      */
     await _attempt(true, getMinValue());
-    await _readEvent("Try");
+    await _readEvent("TryFinish");
 
     await _setMaxChance();
     await _attempt(true, 1000000);
@@ -228,7 +228,7 @@ describe("Lottery", function () {
       totalValue += attemptValue;
 
       await _attempt(true, attemptValue);
-      const tryEvent = await _readEvent("Try");
+      const tryEvent = await _readEvent("TryFinish");
       expectEvent(tryEvent.args, {
         tryAmount: attemptValue,
         count: totalCount,
@@ -250,7 +250,7 @@ describe("Lottery", function () {
         value: 300,
       })
     ).wait();
-    await _readEvent("Try");
+    await _readEvent("TryFinish");
 
     expect(await lottery.totalCount()).to.eq(1);
     expect(await lottery.getBalance()).to.eq(500);
@@ -290,7 +290,7 @@ describe("Lottery", function () {
     );
 
     await _attempt(true, minValue);
-    await _readEvent("Try");
+    await _readEvent("TryFinish");
     expect(await lottery.totalCount()).to.eq(1);
     expect(await lottery.getBalance()).to.eq(startBalance + minValue);
 
@@ -304,18 +304,20 @@ describe("Lottery", function () {
     await _addBalance(true);
 
     await _attempt(true, getMinValue());
-    await _readEvent("Try");
+    await _readEvent("TryFinish");
     await _attempt(true, 10000);
-    await _readEvent("Try");
+    await _readEvent("TryFinish");
   });
 
   it("[ok] attempt - draw in progress", async function () {
     await _addBalance(true, 200);
     randomizer.pause(true);
     await _attempt(true, 100);
+    expect(await lottery.totalCount()).to.eq(1);
+
     await expect(_attempt(false, 500)).revertedWith("draw in progress");
 
-    expect(await lottery.totalCount()).to.eq(0);
+    expect(await lottery.totalCount()).to.eq(1);
     expect(await lottery.getBalance()).to.eq(300);
   });
 
@@ -353,10 +355,10 @@ describe("Lottery", function () {
     await _setTestSettings({ minChance: 0, maxChance: 0 });
 
     await _attempt(true, 100);
-    await _readEvent("Try");
+    await _readEvent("TryFinish");
 
     await _attempt(true, 200);
-    await _readEvent("Try");
+    await _readEvent("TryFinish");
 
     await (await lottery.setStop(true)).wait();
     expect(await lottery.stopped()).to.eq(true);
@@ -375,7 +377,7 @@ describe("Lottery", function () {
     expect(await lottery.stopped()).to.eq(false);
     await _addBalance(true);
     await expect(_attempt(false, 300));
-    await _readEvent("Try");
+    await _readEvent("TryFinish");
   });
 
   it("[ok] win", async function () {
@@ -388,7 +390,7 @@ describe("Lottery", function () {
 
     const addValue2 = 2000;
     await _attempt(true, addValue2);
-    await _readEvent("Try");
+    await _readEvent("TryFinish");
 
     await _setMaxChance();
 

@@ -87,7 +87,7 @@ async function connectToLottery(
     callback(await getEventData(arguments[arguments.length - 1]));
   });
 
-  lotteryContract.on("Try", async function (event: any) {
+  lotteryContract.on("TryFinish", async function (event: any) {
     callback(await getEventData(arguments[arguments.length - 1]));
   });
 

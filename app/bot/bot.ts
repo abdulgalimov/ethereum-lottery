@@ -4,7 +4,8 @@ import { NetworkInfo } from "../networks";
 import { EventData, Events, Settings } from "../contract/types";
 import {
   AddEventObject,
-  TryEventObject,
+  TryFinishEventObject,
+  TryStartEventObject,
   WinEventObject,
 } from "../../typechain-types/contracts/Lottery";
 
@@ -47,12 +48,15 @@ export function notifyEvent(eventData: EventData) {
         .replace("addAmount", formatAmount(addEvent.addAmount))
         .replace("$totalAmount", formatAmount(eventData.currentBalance));
       break;
-    case Events.Try:
-      const tryEvent = eventData.data as TryEventObject;
+    case Events.TryStart:
+      const tryStartEvent = eventData.data as TryStartEventObject;
+      break;
+    case Events.TryFinish:
+      const tryFinishEvent = eventData.data as TryFinishEventObject;
       message = tryMessageTemplate
-        .replace("$tryAmount", formatAmount(tryEvent.tryAmount))
-        .replace("$count", tryEvent.count.toString())
-        .replace("$totalAmount", formatAmount(tryEvent.totalAmount));
+        .replace("$tryAmount", formatAmount(tryFinishEvent.tryAmount))
+        .replace("$count", tryFinishEvent.count.toString())
+        .replace("$totalAmount", formatAmount(tryFinishEvent.totalAmount));
       break;
     case Events.Win:
       const winEvent = eventData.data as WinEventObject;
