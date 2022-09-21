@@ -3,7 +3,7 @@ import { expect } from "chai";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber } from "ethers";
 import { LotteryTest } from "../../typechain-types";
-import { Settings } from "../../app/contract/types";
+import { Settings } from "../../app/types";
 
 export interface UpdateSettings {
   randomValue?: number;

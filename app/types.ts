@@ -4,7 +4,7 @@ import {
   TryFinishEventObject,
   TryStartEventObject,
   WinEventObject,
-} from "../../typechain-types/contracts/Lottery";
+} from "../typechain-types/contracts/Lottery";
 
 export interface Settings {
   randomValue: number;
@@ -32,4 +32,9 @@ export interface EventData {
     | TryStartEventObject
     | TryFinishEventObject
     | WinEventObject;
+}
+
+export interface SaveData {
+  messageId: number;
+  transactionHash: string;
 }

@@ -4,7 +4,7 @@ import { DeployData, NetworkInfo, NetworkType } from "../networks";
 import path from "path";
 import fs from "fs";
 import * as process from "process";
-import { EventData, Settings } from "./types";
+import { EventData, Settings } from "../types";
 
 type Callback = (...args: any[]) => {};
 
@@ -87,6 +87,10 @@ async function connectToLottery(
     callback(await getEventData(arguments[arguments.length - 1]));
   });
 
+  lotteryContract.on("TryStart", async function (event: any) {
+    callback(await getEventData(arguments[arguments.length - 1]));
+  });
+
   lotteryContract.on("TryFinish", async function (event: any) {
     callback(await getEventData(arguments[arguments.length - 1]));
   });
@@ -147,5 +151,5 @@ async function connectToRandomizer(deployData: DeployData) {
     }
   }
 
-  setInterval(sendToRandomizer, 1000);
+  setInterval(sendToRandomizer, 5000);
 }

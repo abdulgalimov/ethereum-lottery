@@ -16,7 +16,7 @@ import {
   UpdateSettings,
 } from "./utils/utils";
 import { onlyOwnerMessage } from "./utils/constants";
-import { Settings } from "../app/contract/types";
+import { Settings } from "../app/types";
 
 describe("Lottery", function () {
   this.timeout(60000);
