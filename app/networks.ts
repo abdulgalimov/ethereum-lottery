@@ -1,19 +1,4 @@
-require("dotenv").config();
-
-const {
-  GOERLI_ALCHEMY_API_URL,
-  GOERLI_SCAN,
-  GOERLI_LOTTERY_ADDRESS,
-  GOERLI_RANDOMIZER_ADDRESS,
-  GOERLI_OWNER_ADDRESS,
-
-  METAMASK_PRIVATE_KEY,
-
-  MAINNET_OWNER_ADDRESS,
-  MAINNET_ALCHEMY_API_URL,
-  MAINNET_LOTTERY_ADDRESS,
-  MAINNET_RANDOMIZER_ADDRESS,
-} = process.env;
+import config from "./config";
 
 const LOCALHOST_PROVIDER = "ws://localhost:8545";
 
@@ -39,11 +24,9 @@ export interface NetworkInfo {
   deployData: DeployData;
 }
 
-export default function getInfo(
-  networkType: NetworkType | string | undefined
-): NetworkInfo {
+export default function getInfo(): NetworkInfo {
+  const networkType = config.network;
   console.log("network", networkType);
-  networkType = networkType || "localhost";
   switch (networkType) {
     case NetworkType.localhost:
       const baseDataPath = "../data";
@@ -65,25 +48,25 @@ export default function getInfo(
       return {
         type: networkType,
         filename: "lottery-goerli.json",
-        providerUrl: GOERLI_ALCHEMY_API_URL as string,
-        scanUrl: GOERLI_SCAN as string,
+        providerUrl: config.goerli.alchemyApiUrl,
+        scanUrl: config.goerli.scanUrl,
         deployData: {
-          ownerAddress: GOERLI_OWNER_ADDRESS as string,
-          ownerKey: METAMASK_PRIVATE_KEY,
-          lotteryAddress: GOERLI_LOTTERY_ADDRESS as string,
-          randomizerAddress: GOERLI_RANDOMIZER_ADDRESS as string,
+          ownerAddress: config.goerli.ownerAddress,
+          ownerKey: config.metamaskPrivateKey,
+          lotteryAddress: config.goerli.lotteryAddress,
+          randomizerAddress: config.goerli.randomizerAddress,
         },
       };
     case NetworkType.mainnet:
       return {
         type: networkType,
         filename: "lottery-mainnet.json",
-        providerUrl: MAINNET_ALCHEMY_API_URL as string,
+        providerUrl: config.mainnet.alchemyApiUrl,
         scanUrl: "",
         deployData: {
-          ownerAddress: MAINNET_OWNER_ADDRESS as string,
-          lotteryAddress: MAINNET_LOTTERY_ADDRESS as string,
-          randomizerAddress: MAINNET_RANDOMIZER_ADDRESS as string,
+          ownerAddress: config.mainnet.ownerAddress,
+          lotteryAddress: config.mainnet.lotteryAddress,
+          randomizerAddress: config.mainnet.randomizerAddress,
         },
       };
     default:

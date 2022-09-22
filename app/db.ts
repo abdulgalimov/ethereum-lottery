@@ -1,8 +1,6 @@
+import config from "./config";
 import { createClient as createRedisClient, RedisClientType } from "redis";
-import * as process from "process";
 import { SaveData } from "./types";
-
-const REDIS_DATABASE: number = +`${process.env.REDIS_DATABASE}` || 0;
 
 export class Db {
   async save(id: string, data: SaveData) {
@@ -22,7 +20,7 @@ export class Db {
 let client: RedisClientType;
 export async function create() {
   client = createRedisClient({
-    database: REDIS_DATABASE,
+    database: config.redis.databaseIndex,
   });
   await client.connect();
 

@@ -1,10 +1,16 @@
 import { ethers, Contract } from "ethers";
-import { WebSocketProvider } from "@ethersproject/providers";
-import { DeployData, NetworkInfo, NetworkType } from "../networks";
 import path from "path";
 import fs from "fs";
 import * as process from "process";
+import { DeployData, NetworkInfo, NetworkType } from "../networks";
 import { EventData, Settings } from "../types";
+import { WebSocketProvider } from "./WebSocketProvider";
+import {
+  AddEventObject,
+  TryFinishEventObject,
+  TryStartEventObject,
+  WinEventObject,
+} from "../../typechain-types/contracts/Lottery";
 
 type Callback = (...args: any[]) => {};
 
@@ -17,7 +23,7 @@ export async function init(_network: NetworkInfo, _callback: Callback) {
 
   const { type, providerUrl, deployData } = _network;
 
-  provider = new ethers.providers.WebSocketProvider(providerUrl);
+  provider = new WebSocketProvider(providerUrl);
 
   switch (type) {
     case NetworkType.localhost:
@@ -74,33 +80,56 @@ async function connectToLottery(
     console.log("TestEvent", event);
   });
 
-  async function getEventData(event: any): Promise<EventData> {
+  async function getEventData(event: any, data: any): Promise<EventData> {
     return {
       name: event.event,
       transactionHash: event.transactionHash,
       currentBalance: (await lotteryContract.functions.getBalance())[0],
-      data: event.args,
+      data,
     };
   }
 
-  lotteryContract.on("Add", async function (event: any) {
-    callback(await getEventData(arguments[arguments.length - 1]));
+  lotteryContract.on("Add", async function () {
+    const event = arguments[arguments.length - 1];
+    const data: AddEventObject = {
+      addAmount: event.args.addAmount,
+    };
+    callback(await getEventData(event, data));
   });
 
-  lotteryContract.on("TryStart", async function (event: any) {
-    callback(await getEventData(arguments[arguments.length - 1]));
+  lotteryContract.on("TryStart", async function () {
+    const event = arguments[arguments.length - 1];
+    const data: TryStartEventObject = {
+      tryAmount: event.args.tryAmount,
+      totalAmount: event.args.totalAmount,
+      count: event.args.count,
+    };
+    callback(await getEventData(event, data));
   });
 
-  lotteryContract.on("TryFinish", async function (event: any) {
-    callback(await getEventData(arguments[arguments.length - 1]));
+  lotteryContract.on("TryFinish", async function () {
+    const event = arguments[arguments.length - 1];
+    const data: TryFinishEventObject = {
+      tryAmount: event.args.tryAmount,
+      totalAmount: event.args.totalAmount,
+      count: event.args.count,
+      isWin: event.args.isWin,
+    };
+    callback(await getEventData(event, data));
   });
 
-  lotteryContract.on("Win", async function (event: any) {
-    callback(await getEventData(arguments[arguments.length - 1]));
+  lotteryContract.on("Win", async function () {
+    const event = arguments[arguments.length - 1];
+    const data: WinEventObject = {
+      winAmount: event.args.winAmount,
+      count: event.args.count,
+    };
+    callback(await getEventData(event, data));
   });
 
-  lotteryContract.on("SettingsChanged", async function (event: any) {
-    const { settings } = event.returnValues;
+  lotteryContract.on("SettingsChanged", async function () {
+    const event = arguments[arguments.length - 1];
+    const { settings } = event.args;
     console.log("[change settings]", settings);
   });
 }

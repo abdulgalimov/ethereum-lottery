@@ -1,4 +1,3 @@
-require("dotenv").config();
 import networks, { NetworkInfo } from "./networks";
 import {
   init as initContract,
@@ -11,8 +10,7 @@ import { create as createDb } from "./db";
 async function main() {
   console.log("[start dev:app]");
 
-  const { npm_config_network, NETWORK } = process.env;
-  const network: NetworkInfo = networks(npm_config_network || NETWORK);
+  const network: NetworkInfo = networks();
   const db = await createDb();
 
   await initContract(network, onEvent);

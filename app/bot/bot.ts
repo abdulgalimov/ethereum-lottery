@@ -1,3 +1,4 @@
+import config from "../config";
 import { Telegraf } from "telegraf";
 import { ethers } from "ethers";
 import { NetworkInfo } from "../networks";
@@ -9,8 +10,7 @@ import {
   WinEventObject,
 } from "../../typechain-types/contracts/Lottery";
 import { Db } from "../db";
-
-const { TELEGRAM_TOKEN, TELEGRAM_CHANNEL_ID } = process.env;
+import { init as queueInit, add as addToQueue } from "./queue";
 
 let network: NetworkInfo;
 let contractSettings: Settings;
@@ -25,7 +25,8 @@ export async function start(
   network = _network;
   contractSettings = _contractSettings;
   db = _db;
-  bot = new Telegraf(TELEGRAM_TOKEN as string);
+  bot = new Telegraf(config.telegram.token as string);
+  await queueInit(parseEvents);
 }
 
 const addMessageTemplate = `
@@ -46,7 +47,12 @@ const winMessageTemplate = `
 `;
 
 export async function notifyEvent(eventData: EventData) {
-  console.log("[event]", eventData);
+  console.log("[add-event]", eventData);
+  await addToQueue(eventData);
+}
+
+async function parseEvents(eventData: EventData) {
+  console.log("[parse-event]", eventData);
   let template: string = "";
   switch (eventData.name) {
     case Events.Add:
@@ -120,11 +126,11 @@ async function sendMessage(
   message: string,
   savedData?: SaveData | null
 ): Promise<number> {
-  const sendMessage = buildMessage(message, eventData, savedData);
+  const messageToSend = buildMessage(message, eventData, savedData);
   if (!savedData) {
     const result = await bot.telegram.sendMessage(
-      TELEGRAM_CHANNEL_ID as string,
-      sendMessage,
+      config.telegram.channelId,
+      messageToSend,
       {
         parse_mode: "HTML",
         disable_web_page_preview: true,
@@ -137,10 +143,10 @@ async function sendMessage(
     return result.message_id;
   } else {
     await bot.telegram.editMessageText(
-      TELEGRAM_CHANNEL_ID as string,
+      config.telegram.channelId,
       savedData.messageId,
       undefined,
-      sendMessage,
+      messageToSend,
       {
         parse_mode: "HTML",
         disable_web_page_preview: true,
