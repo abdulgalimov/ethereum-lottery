@@ -5,9 +5,6 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import networks, { NetworkType } from "../app/networks";
 import { createSettings } from "../test/utils/utils";
 import { IRandomizer, Lottery } from "../typechain-types";
-import * as process from "process";
-
-const { HARDHAT_NETWORK } = process.env;
 
 const dataDir = "data";
 if (!fs.existsSync(dataDir)) {
@@ -74,7 +71,7 @@ function saveOut(
 }
 
 async function main() {
-  const { filename, type } = networks(HARDHAT_NETWORK);
+  const { filename, type } = networks();
   if (type !== NetworkType.localhost) {
     console.log("deploy to localhost only");
     process.exit(1);

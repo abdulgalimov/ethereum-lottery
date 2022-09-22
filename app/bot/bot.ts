@@ -116,7 +116,11 @@ function buildMessage(
   template = template.replace("$minRate", formatAmount(minRate));
 
   template = `${template}
-<a href="${scanUrl}">⤴️ View on scan</a>`;
+<a href="${scanUrl}">⤴️ View on scan</a>
+
+📣 Try your luck
+<code>${network.deployData.lotteryAddress}</code>
+`;
 
   return template;
 }
