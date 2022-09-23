@@ -17,7 +17,7 @@ contract LotteryTest is Lottery {
         settings.maxChance = updateSettings.maxChance;
         settings.winRate = updateSettings.winRate;
         settings.feeRate = updateSettings.feeRate;
-        settings.minRate = updateSettings.minRate;
+        settings.minBet = updateSettings.minBet;
         settings.randomizer = updateSettings.randomizer;
 
         emit SettingsChanged(settings);

@@ -1,9 +1,9 @@
-const footerTemplate = '<a href="$scanUrl">⤴️ View on scan</a>';
+const footerTemplate = '<a href="$scanUrl">💠 View on scan</a>';
 
 export const addMessageTemplate = `
 ➕ Add amount: $addAmount
 💰 Balance: $totalAmount
-💲 Min bet: $minRate
+💲 Min bet: $minBet
 ${footerTemplate}`;
 
 export const tryStartMessageTemplate = `
@@ -14,7 +14,7 @@ export const tryFinishMessageTemplate = `
 🏁 Finish game
 🔢 Count: $count
 💰 Balance: $totalAmount
-💲 Min bet: $minRate
+💲 Min bet: $minBet
 ${footerTemplate}`;
 
 export const winMessageTemplate = `

@@ -142,7 +142,7 @@ async function readSettings(lotteryContract: Contract): Promise<Settings> {
     maxChance: +settings.maxChance,
     winRate: +settings.winRate,
     feeRate: +settings.feeRate,
-    minRate: +settings.minRate,
+    minBet: +settings.minBet,
     randomizer: settings.randomizer,
   };
 }

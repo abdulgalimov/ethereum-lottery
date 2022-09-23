@@ -11,7 +11,7 @@ export interface UpdateSettings {
   maxChance?: number;
   winRate?: number;
   feeRate?: number;
-  minRate?: number;
+  minBet?: number;
   randomizer?: string;
 }
 
@@ -22,7 +22,7 @@ export const defaultSettings: Settings = {
   maxChance: 1000,
   winRate: 90,
   feeRate: 90,
-  minRate: Number(defaultMinRate),
+  minBet: Number(defaultMinRate),
   randomizer: "",
 };
 export const emptySettings: Settings = {
@@ -31,16 +31,14 @@ export const emptySettings: Settings = {
   maxChance: 0,
   winRate: 0,
   feeRate: 0,
-  minRate: 0,
+  minBet: 0,
   randomizer: "",
 };
 
 type SettingsKey = keyof Settings;
 export const defaultBalance = 1000;
 export function getMinValue(value?: number) {
-  return Math.floor(
-    ((value || defaultBalance) * defaultSettings.minRate) / 100
-  );
+  return Math.floor(((value || defaultBalance) * defaultSettings.minBet) / 100);
 }
 
 export function createSettings(newValue?: UpdateSettings): Settings {

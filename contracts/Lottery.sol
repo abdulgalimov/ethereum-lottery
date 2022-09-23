@@ -13,7 +13,7 @@ contract Lottery is Ownable {
         uint maxChance;
         uint winRate;
         uint feeRate;
-        uint minRate;
+        uint minBet;
         IRandomizer randomizer;
     }
     address payable public lotteryOwner;
@@ -36,7 +36,7 @@ contract Lottery is Ownable {
         settings.maxChance = s.maxChance;
         settings.winRate = s.winRate;
         settings.feeRate = s.feeRate;
-        settings.minRate = s.minRate;
+        settings.minBet = s.minBet;
         settings.randomizer = s.randomizer;
     }
 
@@ -65,7 +65,7 @@ contract Lottery is Ownable {
         newSettings.maxChance = updateSettings.maxChance;
         newSettings.winRate = updateSettings.winRate;
         newSettings.feeRate = updateSettings.feeRate;
-        newSettings.minRate = updateSettings.minRate;
+        newSettings.minBet = updateSettings.minBet;
         newSettings.randomizer = updateSettings.randomizer;
         isNewSettings = true;
 
@@ -91,7 +91,7 @@ contract Lottery is Ownable {
         uint totalBalance = address(this).balance;
         require(totalBalance > msg.value, "empty balance");
 
-        require(msg.value >= ((totalBalance - msg.value) * settings.minRate) / 100, "small bet");
+        require(msg.value >= ((totalBalance - msg.value) * settings.minBet) / 100, "small bet");
 
         require(currentValue == 0, "draw in progress");
 
@@ -144,7 +144,7 @@ contract Lottery is Ownable {
                 settings.maxChance = newSettings.maxChance;
                 settings.winRate = newSettings.winRate;
                 settings.feeRate = newSettings.feeRate;
-                settings.minRate = newSettings.minRate;
+                settings.minBet = newSettings.minBet;
                 settings.randomizer = newSettings.randomizer;
 
                 newSettings.randomValue = 0;
@@ -152,7 +152,7 @@ contract Lottery is Ownable {
                 newSettings.maxChance = 0;
                 newSettings.winRate = 0;
                 newSettings.feeRate = 0;
-                newSettings.minRate = 0;
+                newSettings.minBet = 0;
                 newSettings.randomizer = IRandomizer(address(0));
             }
         }

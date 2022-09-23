@@ -12,7 +12,7 @@ export interface Settings {
   maxChance: number;
   winRate: number;
   feeRate: number;
-  minRate: number;
+  minBet: number;
   randomizer: string;
 }
 

@@ -44,7 +44,7 @@ describe("Lottery", function () {
       maxChance: settings.maxChance.toNumber(),
       winRate: settings.winRate.toNumber(),
       feeRate: settings.feeRate.toNumber(),
-      minRate: settings.minRate.toNumber(),
+      minBet: settings.minBet.toNumber(),
       randomizer: settings.randomizer.toString(),
     };
   }
@@ -174,7 +174,7 @@ describe("Lottery", function () {
       maxChance: 200,
       winRate: 50,
       feeRate: 70,
-      minRate: 30,
+      minBet: 30,
     });
     await expect(lottery.setSettings(newSettings));
     const event = await _readEvent("SettingsChanged");
@@ -286,7 +286,7 @@ describe("Lottery", function () {
 
     const balance = await lottery.getBalance();
     const minValue = Math.floor(
-      (balance.toNumber() * defaultSettings.minRate) / 100
+      (balance.toNumber() * defaultSettings.minBet) / 100
     );
 
     await _attempt(true, minValue);
@@ -438,8 +438,8 @@ describe.skip("test algorithm", function () {
   function getValue() {
     const step = 1000000;
     const k = 1 + Math.random() * 5 * step;
-    const minRate = BigNumber.from(Math.floor(settings.minRate * k));
-    const value = lotteryBalance.mul(minRate).div(BigNumber.from(100 * step));
+    const minBet = BigNumber.from(Math.floor(settings.minBet * k));
+    const value = lotteryBalance.mul(minBet).div(BigNumber.from(100 * step));
     if (value.lt(maxValue)) {
       return value;
     } else {

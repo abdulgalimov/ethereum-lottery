@@ -109,15 +109,13 @@ const parsers: Record<Events, (event: EventData) => Promise<void>> = {
 };
 
 function buildMessage(template: string, eventData: EventData): string {
-  const minRate = eventData.currentBalance
-    .mul(contractSettings.minRate)
-    .div(100);
+  const minBet = eventData.currentBalance.mul(contractSettings.minBet).div(100);
 
   const transactionHash = eventData.transactionHash;
   const scanUrl = network.scanUrl.replace("$hash", transactionHash);
 
   return template
-    .replace("$minRate", formatAmount(minRate))
+    .replace("$minBet", formatAmount(minBet))
     .replace("$scanUrl", scanUrl);
 }
 
