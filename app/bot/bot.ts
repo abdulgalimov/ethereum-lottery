@@ -11,6 +11,13 @@ import {
 } from "../../typechain-types/contracts/Lottery";
 import { Db } from "../db";
 import { init as queueInit, add as addToQueue } from "./queue";
+import {
+  addMessageTemplate,
+  tryFinishMessageTemplate,
+  tryLuckTemplate,
+  tryStartMessageTemplate,
+  winMessageTemplate,
+} from "./templates";
 
 let network: NetworkInfo;
 let contractSettings: Settings;
@@ -29,23 +36,6 @@ export async function start(
   await queueInit(parseEvents);
 }
 
-const addMessageTemplate = `
-➕ Add amount: $addAmount
-💰 Total balance: $totalAmount
-💲 Min bet: $minRate`;
-const tryStartMessageTemplate = `
-🎲 Start game: $tryAmount
-...wait`;
-const tryFinishMessageTemplate = `
-🎲 Finish game: $tryAmount
-🔢 Count: $count
-💰 Total balance: $totalAmount
-💲 Min bet: $minRate`;
-const winMessageTemplate = `
-🎉 #Win
-💰 Total balance: $totalAmount;
-`;
-
 export async function notifyEvent(eventData: EventData) {
   console.log("[add-event]", eventData);
   await addToQueue(eventData);
@@ -53,76 +43,82 @@ export async function notifyEvent(eventData: EventData) {
 
 async function parseEvents(eventData: EventData) {
   console.log("[parse-event]", eventData);
-  let template: string = "";
-  switch (eventData.name) {
-    case Events.Add:
-      const addEvent = eventData.data as AddEventObject;
-      template = addMessageTemplate
-        .replace("addAmount", formatAmount(addEvent.addAmount))
-        .replace("$totalAmount", formatAmount(eventData.currentBalance));
-
-      await sendMessage(eventData, template);
-      break;
-    case Events.TryStart:
-      const tryStartEvent = eventData.data as TryStartEventObject;
-      template = tryStartMessageTemplate
-        .replace("$tryAmount", formatAmount(tryStartEvent.tryAmount))
-        .replace("$count", tryStartEvent.count.toString())
-        .replace("$totalAmount", formatAmount(tryStartEvent.totalAmount));
-
-      const messageId = await sendMessage(eventData, template);
-      await db.save(tryStartEvent.count.toString(), {
-        messageId,
-        transactionHash: eventData.transactionHash,
-      });
-      break;
-    case Events.TryFinish:
-      const tryFinishEvent = eventData.data as TryFinishEventObject;
-      template = tryFinishMessageTemplate
-        .replace("$tryAmount", formatAmount(tryFinishEvent.tryAmount))
-        .replace("$count", tryFinishEvent.count.toString())
-        .replace("$totalAmount", formatAmount(tryFinishEvent.totalAmount));
-
-      const savedData = await db.load(tryFinishEvent.count.toString());
-      await sendMessage(eventData, template, savedData);
-      break;
-    case Events.Win:
-      const winEvent = eventData.data as WinEventObject;
-      template = winMessageTemplate.replace(
-        "$totalAmount",
-        formatAmount(winEvent.winAmount)
-      );
-
-      await sendMessage(eventData, template);
-      break;
-  }
+  await parsers[eventData.name](eventData);
 }
 
-function buildMessage(
-  template: string,
-  eventData: EventData,
-  savedData?: SaveData | null
-): string {
-  const transactionHash = savedData
-    ? savedData.transactionHash
-    : eventData.transactionHash;
+async function parseAddEvent(eventData: EventData) {
+  const addEvent = eventData.data as AddEventObject;
+  const template = addMessageTemplate
+    .replace("$addAmount", formatAmount(addEvent.addAmount))
+    .replace("$totalAmount", formatAmount(eventData.currentBalance));
 
-  const scanUrl = network.scanUrl.replace("$hash", transactionHash);
+  const message = buildMessage(template, eventData);
+  await sendMessage(eventData, message);
+}
 
+async function parseTryStartEvent(eventData: EventData) {
+  const tryStartEvent = eventData.data as TryStartEventObject;
+  const template = tryStartMessageTemplate.replace(
+    "$tryAmount",
+    formatAmount(tryStartEvent.tryAmount)
+  );
+  const message = buildMessage(template, eventData);
+  const messageId = await sendMessage(eventData, message);
+  await db.save(tryStartEvent.count.toString(), {
+    messageId,
+    transactionHash: eventData.transactionHash,
+  });
+}
+
+async function parseTryFinishEvent(eventData: EventData) {
+  const tryFinishEvent = eventData.data as TryFinishEventObject;
+  const template = tryFinishMessageTemplate
+    .replace("$tryAmount", formatAmount(tryFinishEvent.tryAmount))
+    .replace("$count", tryFinishEvent.count.toString())
+    .replace("$totalAmount", formatAmount(tryFinishEvent.totalAmount));
+
+  const message = buildMessage(template, eventData);
+  const tryLuckMessage = tryLuckTemplate.replace(
+    "$contractAddress",
+    network.deployData.lotteryAddress
+  );
+  const fullMessage = `${message}
+
+${tryLuckMessage}`;
+
+  const savedData = await db.load(tryFinishEvent.count.toString());
+  await sendMessage(eventData, fullMessage, savedData);
+}
+
+async function parseWinEvent(eventData: EventData) {
+  const winEvent = eventData.data as WinEventObject;
+  const template = winMessageTemplate.replace(
+    "$totalAmount",
+    formatAmount(winEvent.winAmount)
+  );
+  const message = buildMessage(template, eventData);
+  const savedData = await db.load(winEvent.count.toString());
+  await sendMessage(eventData, message, savedData);
+}
+
+const parsers: Record<Events, (event: EventData) => Promise<void>> = {
+  [Events.Add]: parseAddEvent,
+  [Events.TryStart]: parseTryStartEvent,
+  [Events.TryFinish]: parseTryFinishEvent,
+  [Events.Win]: parseWinEvent,
+};
+
+function buildMessage(template: string, eventData: EventData): string {
   const minRate = eventData.currentBalance
     .mul(contractSettings.minRate)
     .div(100);
 
-  template = template.replace("$minRate", formatAmount(minRate));
+  const transactionHash = eventData.transactionHash;
+  const scanUrl = network.scanUrl.replace("$hash", transactionHash);
 
-  template = `${template}
-<a href="${scanUrl}">⤴️ View on scan</a>
-
-📣 Try your luck
-<code>${network.deployData.lotteryAddress}</code>
-`;
-
-  return template;
+  return template
+    .replace("$minRate", formatAmount(minRate))
+    .replace("$scanUrl", scanUrl);
 }
 
 async function sendMessage(
@@ -130,34 +126,20 @@ async function sendMessage(
   message: string,
   savedData?: SaveData | null
 ): Promise<number> {
-  const messageToSend = buildMessage(message, eventData, savedData);
-  if (!savedData) {
-    const result = await bot.telegram.sendMessage(
-      config.telegram.channelId,
-      messageToSend,
-      {
-        parse_mode: "HTML",
-        disable_web_page_preview: true,
-      }
-    );
-    if (!result) {
-      console.log("Error send message", result);
-      return 0;
+  const result = await bot.telegram.sendMessage(
+    config.telegram.channelId,
+    message,
+    {
+      parse_mode: "HTML",
+      disable_web_page_preview: true,
+      reply_to_message_id: savedData ? savedData.messageId : undefined,
     }
-    return result.message_id;
-  } else {
-    await bot.telegram.editMessageText(
-      config.telegram.channelId,
-      savedData.messageId,
-      undefined,
-      messageToSend,
-      {
-        parse_mode: "HTML",
-        disable_web_page_preview: true,
-      }
-    );
+  );
+  if (!result) {
+    console.log("Error send message", result);
     return 0;
   }
+  return result.message_id;
 }
 
 function formatAmount(amount: any): string {
