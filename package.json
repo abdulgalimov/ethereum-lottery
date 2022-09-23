@@ -7,11 +7,15 @@
     "build": "npm run compile && npm run build:artifacts && npm run build:app",
     "start:app": "npm run build:app && NETWORK=localhost node dist/app.js",
     "deploy:localhost": "npx hardhat run scripts/deploy.ts --network localhost",
+    "deploy:goerli": "npx hardhat run scripts/deploy.ts --network goerli",
+    "verify:localhost": "npx hardhat run scripts/verify.ts --network localhost",
+    "verify:goerli": "npx hardhat run scripts/verify.ts --network goerli",
     "test": "npx hardhat test"
   },
   "name": "hardhat-project",
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^1.0.2",
+    "@nomiclabs/hardhat-etherscan": "^3.1.0",
     "@types/bull": "^3.15.9",
     "hardhat": "^2.10.2",
     "mocha-it-each": "^1.0.2",

@@ -8,6 +8,7 @@ const {
   GOERLI_OWNER_ADDRESS,
 
   METAMASK_PRIVATE_KEY,
+  ETHERSCAN_KEY,
 
   MAINNET_SCAN,
   MAINNET_OWNER_ADDRESS,
@@ -15,7 +16,9 @@ const {
   MAINNET_LOTTERY_ADDRESS,
   MAINNET_RANDOMIZER_ADDRESS,
 
+  HARDHAT_NETWORK,
   NETWORK,
+  network,
   npm_config_network,
 
   TELEGRAM_TOKEN,
@@ -46,6 +49,7 @@ export interface Config {
   goerli: ConfigNet;
   mainnet: ConfigNet;
   metamaskPrivateKey: string;
+  etherscanKey: string;
   network: string;
   telegram: ConfigTelegram;
 }
@@ -69,11 +73,15 @@ const config: Config = {
     scanUrl: MAINNET_SCAN as string,
   },
   metamaskPrivateKey: METAMASK_PRIVATE_KEY as string,
-  network: NETWORK || npm_config_network || "localhost",
+  etherscanKey: ETHERSCAN_KEY as string,
+  network:
+    HARDHAT_NETWORK || NETWORK || network || npm_config_network || "localhost",
   telegram: {
     token: TELEGRAM_TOKEN as string,
     channelId: +`${TELEGRAM_CHANNEL_ID}`,
   },
 };
+
+console.log("config", config.network, HARDHAT_NETWORK);
 
 export default config;
