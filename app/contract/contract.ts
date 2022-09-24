@@ -76,10 +76,6 @@ async function connectToLottery(
 
   settings = await readSettings(lotteryContract);
 
-  lotteryContract.on("TestEvent", async function (event: any) {
-    console.log("TestEvent", event);
-  });
-
   async function getEventData(event: any, data: any): Promise<EventData> {
     return {
       name: event.event,

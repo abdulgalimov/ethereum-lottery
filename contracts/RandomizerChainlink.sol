@@ -24,7 +24,7 @@ contract RandomizerChainlink is VRFConsumerBaseV2, IRandomizer, Ownable {
     uint256[] public s_randomWords;
     uint256 public s_requestId;
 
-    ILottery lottery;
+    ILottery public lottery;
 
     constructor(uint64 subscriptionId, address _vrfCoordinator) VRFConsumerBaseV2(_vrfCoordinator) Ownable() {
         vrfCoordinator = _vrfCoordinator;
