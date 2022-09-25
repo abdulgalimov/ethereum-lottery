@@ -3,10 +3,8 @@
 pragma solidity ^0.8.16;
 
 import "./IRandomizer.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/Address.sol";
 
-contract Lottery is Ownable {
+contract Lottery {
     struct Settings {
         uint randomValue;
         uint minChance;
@@ -16,7 +14,7 @@ contract Lottery is Ownable {
         uint minBet;
         IRandomizer randomizer;
     }
-    address payable public lotteryOwner;
+    address payable public owner;
     uint public totalCount = 0;
     bool public stopped = false;
 
@@ -27,10 +25,10 @@ contract Lottery is Ownable {
     address public currentSender;
     uint public currentValue;
 
-    constructor(Settings memory s) Ownable() {
-        require(Address.isContract(address(s.randomizer)), "Randomizer address is not contract");
+    constructor(Settings memory s) {
+        isContract(address(s.randomizer));
 
-        lotteryOwner = payable(msg.sender);
+        owner = payable(msg.sender);
         settings.randomValue = s.randomValue;
         settings.minChance = s.minChance;
         settings.maxChance = s.maxChance;
@@ -40,16 +38,25 @@ contract Lottery is Ownable {
         settings.randomizer = s.randomizer;
     }
 
-    function _transferOwnership(address newOwner) internal override {
-        super._transferOwnership(newOwner);
-        lotteryOwner = payable(newOwner);
-    }
 
     event Add(uint addAmount);
     event TryStart(uint tryAmount, uint count, uint totalAmount);
     event TryFinish(uint tryAmount, uint count, uint totalAmount, bool isWin);
     event Win(uint winAmount, uint count);
     event SettingsChanged(Settings settings);
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Owner only");
+        _;
+    }
+
+    function isContract(address account) private view {
+        require(account.code.length > 0, "Randomizer address is not contract");
+    }
+
+    function transferOwner(address newOwner) external onlyOwner {
+        owner = payable(newOwner);
+    }
 
     function addBalance() external payable onlyOwner {
         require(msg.value > 0, "zero value");
@@ -58,7 +65,7 @@ contract Lottery is Ownable {
     }
 
     function setSettings(Settings calldata updateSettings) external onlyOwner {
-        require(Address.isContract(address(updateSettings.randomizer)), "Randomizer address is not contract");
+        isContract(address(updateSettings.randomizer));
 
         newSettings.randomValue = updateSettings.randomValue;
         newSettings.minChance = updateSettings.minChance;
@@ -85,7 +92,7 @@ contract Lottery is Ownable {
     }
 
     function attempt() public payable {
-//        require(msg.sender != lotteryOwner, "no owner");
+//        require(msg.sender != owner, "no owner");
         require(msg.value > 0, "no zero money");
 
         uint totalBalance = address(this).balance;
@@ -124,9 +131,9 @@ contract Lottery is Ownable {
             uint feeValue = totalBalance - winAmount;
 
             if (stopped) {
-                lotteryOwner.transfer(feeValue);
+                owner.transfer(feeValue);
             } else {
-                lotteryOwner.transfer((feeValue * settings.feeRate) / 100);
+                owner.transfer((feeValue * settings.feeRate) / 100);
             }
 
             address payable winner = payable(currentSender);

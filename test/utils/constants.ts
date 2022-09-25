@@ -1,1 +1,1 @@
-export const onlyOwnerMessage: string = "Ownable: caller is not the owner";
+export const onlyOwnerMessage: string = "Owner only";
