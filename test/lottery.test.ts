@@ -65,7 +65,7 @@ describe("Lottery", function () {
 
   async function _setTestSettings(update: UpdateSettings) {
     const settings = createSettings(update);
-    await (await lottery.setTestSettings(settings)).wait();
+    await (await lottery.t_setSettings(settings)).wait();
   }
 
   async function _setMaxChance() {
@@ -204,7 +204,7 @@ describe("Lottery", function () {
   it("gas used", async function () {
     const user = signers[1];
     const b1 = await user.getBalance();
-    const tx = await lottery.connect(user).testUpdate();
+    const tx = await lottery.connect(user).t_testUpdate();
     const res = await tx.wait();
     const b2 = await user.getBalance();
 
@@ -340,7 +340,7 @@ describe("Lottery", function () {
       lotteryLocal.connect(getUser()).attempt({
         value: 500,
       })
-    ).revertedWith("invalid call randomizer");
+    ).revertedWithoutReason();
 
     expect(await lotteryLocal.totalCount()).to.eq(0);
     expect(await lotteryLocal.getBalance()).to.eq(200);

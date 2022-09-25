@@ -35,7 +35,7 @@ describe("RandomizerCustom", () => {
 
     await (await randomizerCustom.setLottery(lottery.address)).wait();
 
-    await (await lottery.requestRandom()).wait();
+    await (await lottery.t_requestRandom()).wait();
   });
 
   it("get random fail", async () => {
