@@ -24,8 +24,8 @@ contract Lottery is Ownable {
     Settings public newSettings;
     bool private isNewSettings;
 
-    address private currentSender;
-    uint private currentValue;
+    address public currentSender;
+    uint public currentValue;
 
     constructor(Settings memory s) Ownable() {
         require(Address.isContract(address(s.randomizer)), "Randomizer address is not contract");
@@ -95,8 +95,7 @@ contract Lottery is Ownable {
 
         require(currentValue == 0, "draw in progress");
 
-        (bool success, ) = address(settings.randomizer).call(abi.encodeWithSignature("getRandom()"));
-        require(success, "invalid call randomizer");
+        settings.randomizer.getRandom();
 
         totalCount++;
         currentSender = msg.sender;

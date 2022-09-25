@@ -9,25 +9,16 @@ import "./IRandomizer.sol";
 import "./ILottery.sol";
 
 contract RandomizerChainlink is VRFConsumerBaseV2, IRandomizer, Ownable {
-    VRFCoordinatorV2Interface COORDINATOR;
-    uint64 s_subscriptionId;
-    address vrfCoordinator;
-
+    VRFCoordinatorV2Interface public COORDINATOR;
+    uint64 public s_subscriptionId;
     bytes32 keyHash = 0x79d3d8832d904592c0bf9818b621522c988bb8b0c05cdc3b15aea1b6e8db0c15;
-
-    uint32 callbackGasLimit = 100000000;
-
-    uint16 requestConfirmations = 3;
-
-    uint32 numWords =  2;
 
     uint256[] public s_randomWords;
     uint256 public s_requestId;
 
     ILottery public lottery;
 
-    constructor(uint64 subscriptionId, address _vrfCoordinator) VRFConsumerBaseV2(_vrfCoordinator) Ownable() {
-        vrfCoordinator = _vrfCoordinator;
+    constructor(uint64 subscriptionId, address vrfCoordinator) VRFConsumerBaseV2(vrfCoordinator) Ownable() {
         COORDINATOR = VRFCoordinatorV2Interface(vrfCoordinator);
         s_subscriptionId = subscriptionId;
     }
@@ -58,9 +49,9 @@ contract RandomizerChainlink is VRFConsumerBaseV2, IRandomizer, Ownable {
         s_requestId = COORDINATOR.requestRandomWords(
             keyHash,
             s_subscriptionId,
-            requestConfirmations,
-            callbackGasLimit,
-            numWords
+            3,
+            2_500_000,
+            1
         );
         return true;
     }

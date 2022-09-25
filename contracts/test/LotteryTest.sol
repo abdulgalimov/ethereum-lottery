@@ -11,7 +11,7 @@ contract LotteryTest is Lottery {
 
     event TestEvent(uint256 num);
 
-    function setTestSettings(Settings calldata updateSettings) external onlyOwner {
+    function t_setSettings(Settings calldata updateSettings) external onlyOwner {
         settings.randomValue = updateSettings.randomValue;
         settings.minChance = updateSettings.minChance;
         settings.maxChance = updateSettings.maxChance;
@@ -24,12 +24,17 @@ contract LotteryTest is Lottery {
     }
 
     uint test = 0;
-    function testUpdate() external {
+    function t_testUpdate() external {
         test++;
         emit TestEvent(test);
     }
 
-    function requestRandom() external onlyOwner {
+    function t_requestRandom() external onlyOwner {
         settings.randomizer.getRandom();
+    }
+
+    function t_resetCurrentValue() external {
+        currentSender = address(0);
+        currentValue = 0;
     }
 }
