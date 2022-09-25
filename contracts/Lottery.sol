@@ -85,7 +85,7 @@ contract Lottery is Ownable {
     }
 
     function attempt() public payable {
-        require(msg.sender != lotteryOwner, "no owner");
+//        require(msg.sender != lotteryOwner, "no owner");
         require(msg.value > 0, "no zero money");
 
         uint totalBalance = address(this).balance;
