@@ -15,14 +15,13 @@ export interface UpdateSettings {
   randomizer?: string;
 }
 
-export const defaultMinRate: bigint = 1n;
 export const defaultSettings: Settings = {
   randomValue: 10000,
   minChance: 10,
   maxChance: 1000,
   winRate: 90,
   feeRate: 90,
-  minBet: Number(defaultMinRate),
+  minBet: 1,
   randomizer: "",
 };
 export const emptySettings: Settings = {
