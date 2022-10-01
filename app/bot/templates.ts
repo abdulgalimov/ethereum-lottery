@@ -19,7 +19,7 @@ ${footerTemplate}`;
 
 export const winMessageTemplate = `
 🎉 #Win
-💰 Balance: $totalAmount
+💰 Amount: $winAmount
 ${footerTemplate}`;
 
 export const tryLuckTemplate = `📣 Try your luck

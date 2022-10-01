@@ -24,7 +24,7 @@ contract LotteryTest is Lottery {
     }
 
     uint test = 0;
-    function t_testUpdate() external {
+    function t_testUpdate() external onlyOwner {
         test++;
         emit TestEvent(test);
     }
@@ -33,7 +33,7 @@ contract LotteryTest is Lottery {
         settings.randomizer.getRandom();
     }
 
-    function t_resetCurrentValue() external {
+    function t_resetCurrentValue() external onlyOwner {
         currentSender = address(0);
         currentValue = 0;
     }

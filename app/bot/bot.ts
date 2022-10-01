@@ -93,7 +93,7 @@ ${tryLuckMessage}`;
 async function parseWinEvent(eventData: EventData) {
   const winEvent = eventData.data as WinEventObject;
   const template = winMessageTemplate.replace(
-    "$totalAmount",
+    "$winAmount",
     formatAmount(winEvent.winAmount)
   );
   const message = buildMessage(template, eventData);

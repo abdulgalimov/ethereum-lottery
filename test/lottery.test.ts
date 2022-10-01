@@ -78,10 +78,16 @@ describe("Lottery", function () {
   function _attempt(wait?: boolean, value?: number, user?: SignerWithAddress) {
     const options = {
       value: BigNumber.from(value == undefined ? 1000 : value),
+      gasLimit: 200_000,
     };
     const txPromise = lottery.connect(user || getUser()).attempt(options);
     if (wait) {
-      return txPromise.then((tx: any) => tx.wait());
+      return txPromise
+        .then((tx: any) => tx.wait())
+        .then((res) => {
+          console.log("res", res.gasUsed.toNumber());
+          return res;
+        });
     } else {
       return txPromise;
     }
@@ -202,16 +208,15 @@ describe("Lottery", function () {
   });
 
   it("gas used", async function () {
-    const user = signers[1];
-    const b1 = await user.getBalance();
-    const tx = await lottery.connect(user).t_testUpdate();
+    const b1 = await owner.getBalance();
+    const tx = await lottery.connect(owner).t_testUpdate();
     const res = await tx.wait();
-    const b2 = await user.getBalance();
+    const b2 = await owner.getBalance();
 
     expect(b1).to.eq(b2.add(res.cumulativeGasUsed.mul(res.effectiveGasPrice)));
   });
 
-  it("[ok] attempt", async function () {
+  it.only("[ok] attempt", async function () {
     const startBalance = 1000;
     await _addBalance(true, startBalance);
     await _setTestSettings({

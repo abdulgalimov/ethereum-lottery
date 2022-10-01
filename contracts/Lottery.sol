@@ -92,15 +92,13 @@ contract Lottery {
     }
 
     function attempt() public payable {
-//        require(msg.sender != owner, "no owner");
+        require(currentValue == 0, "draw in progress");
         require(msg.value > 0, "no zero money");
 
         uint totalBalance = address(this).balance;
         require(totalBalance > msg.value, "empty balance");
 
         require(msg.value >= ((totalBalance - msg.value) * settings.minBet) / 100, "small bet");
-
-        require(currentValue == 0, "draw in progress");
 
         settings.randomizer.getRandom();
 

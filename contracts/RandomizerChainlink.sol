@@ -50,7 +50,7 @@ contract RandomizerChainlink is VRFConsumerBaseV2, IRandomizer, Ownable {
             keyHash,
             s_subscriptionId,
             3,
-            2_500_000,
+            150_000,
             1
         );
         return true;
