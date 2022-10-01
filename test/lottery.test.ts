@@ -85,7 +85,7 @@ describe("Lottery", function () {
       return txPromise
         .then((tx: any) => tx.wait())
         .then((res) => {
-          console.log("res", res.gasUsed.toNumber());
+          //console.log("res", res.gasUsed.toNumber());
           return res;
         });
     } else {
@@ -216,7 +216,7 @@ describe("Lottery", function () {
     expect(b1).to.eq(b2.add(res.cumulativeGasUsed.mul(res.effectiveGasPrice)));
   });
 
-  it.only("[ok] attempt", async function () {
+  it("[ok] attempt", async function () {
     const startBalance = 1000;
     await _addBalance(true, startBalance);
     await _setTestSettings({
