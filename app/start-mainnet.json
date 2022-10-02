@@ -1,6 +1,6 @@
 {
   "script": "dist/app/app.js",
-  "name": "lottery-goerli",
+  "name": "lottery-mainnet",
   "ignore_watch": ["temp"],
   "out_file": "./temp/logs/out.txt",
   "error_file": "./temp/logs/error.txt",
