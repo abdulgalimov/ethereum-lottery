@@ -13,6 +13,12 @@ export interface DeployData {
   ownerKey?: string;
   lotteryAddress: string;
   randomizerAddress: string;
+  chainlink?: ChainLinkData;
+}
+
+export interface ChainLinkData {
+  subscriptionId: number;
+  vrfCoordinator: string;
 }
 
 export interface NetworkInfo {
@@ -39,7 +45,7 @@ export default function getInfo(): NetworkInfo {
         scanUrl: "",
         deployData: {
           ownerAddress: LotteryInfo.owner,
-          ownerKey: LotteryInfo.privateKey,
+          ownerKey: LotteryInfo.hardhatPrivateKey,
           lotteryAddress: LotteryInfo.lottery,
           randomizerAddress: LotteryInfo.randomizer,
         },
@@ -55,6 +61,10 @@ export default function getInfo(): NetworkInfo {
           ownerKey: config.metamaskPrivateKey,
           lotteryAddress: config.goerli.lotteryAddress,
           randomizerAddress: config.goerli.randomizerAddress,
+          chainlink: {
+            subscriptionId: 1933,
+            vrfCoordinator: "0x2Ca8E0C643bDe4C2E08ab1fA0da3401AdAD7734D",
+          },
         },
       };
     case NetworkType.mainnet:
@@ -67,6 +77,10 @@ export default function getInfo(): NetworkInfo {
           ownerAddress: config.mainnet.ownerAddress,
           lotteryAddress: config.mainnet.lotteryAddress,
           randomizerAddress: config.mainnet.randomizerAddress,
+          chainlink: {
+            subscriptionId: 400,
+            vrfCoordinator: "0x271682DEB8C4E0901D1a1550aD2e64D568E69909",
+          },
         },
       };
     default:

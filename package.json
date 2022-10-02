@@ -7,7 +7,7 @@
     "build": "npm run compile && npm run build:artifacts && npm run build:app",
     "start:app": "npm run build:app && NETWORK=localhost node dist/app.js",
     "deploy:localhost": "npx hardhat run scripts/deploy.ts --network localhost",
-    "deploy:goerli": "npx hardhat run scripts/deploy.ts --network goerli",
+    "deploy:goerli": "RANDOMIZER=chainlink npx hardhat run scripts/deploy.ts --network goerli",
     "verify:localhost": "npx hardhat run scripts/verify.ts --network localhost",
     "verify:goerli": "npx hardhat run scripts/verify.ts --network goerli",
     "test": "npx hardhat test"

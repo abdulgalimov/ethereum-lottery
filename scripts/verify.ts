@@ -11,18 +11,20 @@ async function main() {
   }
   const data = JSON.parse(fs.readFileSync(`data/${filename}`).toString());
 
-  await verify(data.randomizer);
-  // todo verify lottery
+  await verify(data.randomizerChainlink);
+  await verify(data.randomizerCustom);
+  await verify(data.lottery);
 }
 
 async function verify(contractData: { address: string; argumentsCode: any[] }) {
   try {
-    const result = await hre.run("verify:verify", {
+    await hre.run("verify:verify", {
       address: contractData.address,
       constructorArguments: contractData.argumentsCode,
     });
-    console.log("result", result);
-  } catch (err) {}
+  } catch (err) {
+    console.log("err", err);
+  }
 }
 
 main().catch((error) => {

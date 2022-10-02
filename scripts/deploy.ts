@@ -1,4 +1,4 @@
-import networks, { NetworkType } from "../app/networks";
+import networks, { ChainLinkData, NetworkType } from "../app/networks";
 import { ethers } from "hardhat";
 import fs from "fs";
 import path from "path";
@@ -35,21 +35,27 @@ async function deployCustomRandomizer(
 }
 
 async function deployChainlinkRandomizer(
-  owner: SignerWithAddress
+  owner: SignerWithAddress,
+  chainlinkData?: ChainLinkData
 ): Promise<DeployInfo> {
+  if (!chainlinkData) {
+    throw new Error("Invalid chainlink data");
+  }
   const RandomizerFactory = await ethers.getContractFactory(
     "RandomizerChainlink",
     owner
   );
   const randomizer = await RandomizerFactory.deploy(
-    1933,
-    "0x2Ca8E0C643bDe4C2E08ab1fA0da3401AdAD7734D"
+    chainlinkData.subscriptionId,
+    chainlinkData.vrfCoordinator
   );
   await randomizer.deployed();
+
+  const args = [chainlinkData.subscriptionId, chainlinkData.vrfCoordinator];
   return {
     contract: randomizer,
-    argumentsCmd: "",
-    argumentsCode: [],
+    argumentsCmd: `[${args.join(", ")}]`,
+    argumentsCode: args,
   };
 }
 
@@ -82,12 +88,12 @@ function saveOut(
   owner: SignerWithAddress,
   lottery: DeployInfo,
   randomizerCustom: DeployInfo,
-  randomizerChainlink: DeployInfo,
+  randomizerChainlink: DeployInfo | null,
   filename: string
 ) {
   const saveData = {
     owner: owner.address,
-    privateKey:
+    hardhatPrivateKey:
       "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
     lottery: {
       address: lottery.contract.address,
@@ -99,11 +105,13 @@ function saveOut(
       argumentsCmd: randomizerCustom.argumentsCmd,
       argumentsCode: randomizerCustom.argumentsCode,
     },
-    randomizerChainlink: {
-      address: randomizerChainlink.contract.address,
-      argumentsCmd: randomizerChainlink.argumentsCmd,
-      argumentsCode: randomizerChainlink.argumentsCode,
-    },
+    randomizerChainlink: randomizerChainlink
+      ? {
+          address: randomizerChainlink.contract.address,
+          argumentsCmd: randomizerChainlink.argumentsCmd,
+          argumentsCode: randomizerChainlink.argumentsCode,
+        }
+      : null,
   };
   const saveJson = JSON.stringify(saveData, null, 2);
   console.log(`Deployed:
@@ -119,24 +127,34 @@ enum Randomizers {
   CUSTOM = "custom",
   CHAINLINK = "chainlink",
 }
-const randomizer = process.env.npm_config_randomizer || Randomizers.CUSTOM;
+const randomizer =
+  process.env.npm_config_randomizer ||
+  process.env.RANDOMIZER ||
+  Randomizers.CUSTOM;
+console.log("randomizer", randomizer);
 
 async function main() {
-  const { filename, type } = networks();
+  const { filename, type, deployData } = networks();
   if (type !== NetworkType.localhost && type !== NetworkType.goerli) {
     console.log("deploy to localhost/goerli only");
     process.exit(1);
   }
 
   const [owner] = await ethers.getSigners();
+  const isLocalhost = type === NetworkType.localhost;
 
-  const randomizerChainlink = await deployChainlinkRandomizer(owner);
+  const randomizerChainlink = !isLocalhost
+    ? await deployChainlinkRandomizer(owner, deployData.chainlink)
+    : null;
   //
   const randomizerCustom = await deployCustomRandomizer(owner);
 
   let currentRandomizer: DeployInfo;
   switch (randomizer) {
     case Randomizers.CHAINLINK:
+      if (!randomizerChainlink) {
+        throw new Error("Invalid randomizerChainlink");
+      }
       currentRandomizer = randomizerChainlink;
       break;
     case Randomizers.CUSTOM:
