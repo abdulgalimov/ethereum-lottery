@@ -49,12 +49,16 @@ describe("Lottery", function () {
     };
   }
 
-  function _addBalance(wait?: boolean, value?: number, otherUser?: boolean) {
+  function _addBalance(
+    wait?: boolean,
+    value?: number,
+    otherUser?: SignerWithAddress
+  ) {
     const options = {
       value: value !== undefined ? BigNumber.from(value) : defaultBalance,
     };
     const txPromise = otherUser
-      ? lottery.connect(getUser()).addBalance(options)
+      ? lottery.connect(otherUser).addBalance(options)
       : lottery.addBalance(options);
     if (wait) {
       return txPromise.then((tx: any) => tx.wait());
@@ -166,11 +170,24 @@ describe("Lottery", function () {
   it("[fail] addBalance", async function () {
     await expect(_addBalance(false, 0)).to.revertedWith("zero value");
 
-    await expect(_addBalance(false, 1000, true)).to.revertedWith(
+    await expect(_addBalance(false, 1000, getUser())).to.revertedWith(
       onlyOwnerMessage
     );
 
     expect(await lottery.getBalance()).to.eq(0);
+  });
+
+  it("[ok] transferOwner", async () => {
+    const newOwner = getUser();
+    await (await lottery.transferOwner(newOwner.address)).wait();
+    await expect(lottery.transferOwner(newOwner.address)).to.revertedWith(
+      onlyOwnerMessage
+    );
+
+    await expect(_addBalance(false, 1)).to.revertedWith(onlyOwnerMessage);
+    await expect(_addBalance(false, 1, newOwner))
+      .to.emit(lottery, "Add")
+      .withArgs(1);
   });
 
   it("[ok] settings", async function () {
@@ -261,14 +278,6 @@ describe("Lottery", function () {
     expect(await lottery.getBalance()).to.eq(500);
   });
 
-  it.skip("[fail] attempt - no owner", async function () {
-    await _addBalance(true, 200);
-    expect(_attempt(false, 100, owner)).to.revertedWith("no owner");
-
-    expect(await lottery.totalCount()).to.eq(0);
-    expect(await lottery.getBalance()).to.eq(200);
-  });
-
   it("[fail] attempt - empty balance", async function () {
     expect(_attempt(false, 100)).to.revertedWith("empty balance");
 
@@ -351,7 +360,7 @@ describe("Lottery", function () {
     expect(await lotteryLocal.getBalance()).to.eq(200);
   });
 
-  it("[ok] receiveRandom - randomizer only", async function () {
+  it("[fail] receiveRandom - randomizer only", async function () {
     await expect(lottery.receiveRandom(100)).revertedWith("randomizer only");
   });
 
@@ -417,7 +426,7 @@ describe("Lottery", function () {
     await expectBalanceChange(
       receipt,
       randomizerUser,
-      [-100640000805120, -102718]
+      [-100640000805120, -96037]
     );
     expectEvent(winEvent.args, {
       winAmount: winValue,
@@ -429,7 +438,7 @@ describe("Lottery", function () {
   });
 });
 
-describe.skip("test algorithm", function () {
+describe("test algorithm", function () {
   const settings = defaultSettings;
   let ownerBalance = BigNumber.from(0);
   let lotteryBalance = ethers.utils.parseEther("0.1");
@@ -441,10 +450,10 @@ describe.skip("test algorithm", function () {
     return Math.floor(Math.random() * users.length);
   }
   function getValue() {
-    const step = 1000000;
-    const k = 1 + Math.random() * 5 * step;
-    const minBet = BigNumber.from(Math.floor(settings.minBet * k));
-    const value = lotteryBalance.mul(minBet).div(BigNumber.from(100 * step));
+    // const step = 1_000_000;
+    // const k = 1 + Math.random() * 5 * step;
+    const minBet = BigNumber.from(settings.minBet);
+    const value = lotteryBalance.mul(minBet).div(BigNumber.from(100));
     if (value.lt(maxValue)) {
       return value;
     } else {
@@ -457,29 +466,28 @@ describe.skip("test algorithm", function () {
     userIndex: number,
     currentValue: BigNumber
   ) {
-    // console.log('----- tryGame', userIndex, ethers.utils.formatEther(currentValue));
-    lotteryBalance = lotteryBalance.add(currentValue);
     const totalBalance = lotteryBalance;
-    const beforeBalance = lotteryBalance.sub(currentValue);
+    const beforeBalance = totalBalance.sub(currentValue);
 
-    const rnd = Math.floor(Math.random() * settings.randomValue);
     let chance =
       settings.minChance +
       currentValue
         .mul(settings.maxChance - settings.minChance)
         .div(beforeBalance)
         .toNumber();
-
     if (chance > settings.maxChance) {
       chance = settings.maxChance;
     }
+
+    const rnd = Math.floor(Math.random() * settings.randomValue);
+
     if (rnd <= chance) {
       const winAmount = totalBalance.mul(settings.winRate).div(100);
       const feeValue = totalBalance.sub(winAmount);
       const ownerValue = feeValue.mul(settings.feeRate).div(100);
 
-      users[userIndex] = users[userIndex].add(BigNumber.from(winAmount));
-      ownerBalance = ownerBalance.add(BigNumber.from(ownerValue));
+      users[userIndex] = users[userIndex].add(winAmount);
+      ownerBalance = ownerBalance.add(ownerValue);
       lotteryBalance = lotteryBalance.sub(winAmount).sub(ownerValue);
       console.log(
         "win",
@@ -488,31 +496,39 @@ describe.skip("test algorithm", function () {
         ethers.utils.formatEther(lotteryBalance),
         ethers.utils.formatEther(currentValue)
       );
-      return true;
+      return winAmount;
     } else {
       // console.log('try', `[${gameIndex}]`, ethers.utils.formatEther(lotteryBalance));
     }
-    return false;
+    return 0;
   }
 
   it("should", function () {
     let gameIndex = 0;
     let offUsersCount = 0;
-    let winCount = 0;
-    for (let i = 0; i < 10000; i++) {
-      const user = getRandomUser();
-      const value = getValue();
-      users[user] = users[user].sub(value);
-      const isWin = tryGame(++gameIndex, user, getValue());
-      if (isWin) {
-        winCount++;
+    let totalWinCount = 0;
+    let totalWinAmount = BigNumber.from(0);
+    const gamesCount = 10000;
+    for (let i = 0; i < gamesCount; i++) {
+      const userIndex = getRandomUser();
+      const sendValue = getValue();
+      users[userIndex] = users[userIndex].sub(sendValue);
+      lotteryBalance = lotteryBalance.add(sendValue);
+
+      const winAmount = tryGame(++gameIndex, userIndex, sendValue);
+
+      if (winAmount) {
+        totalWinAmount = totalWinAmount.add(winAmount);
+        totalWinCount++;
         gameIndex = 0;
-      } else if (users[user].lt(0)) {
+      } else if (users[userIndex].lt(0)) {
         offUsersCount++;
-        users.splice(user, 1);
+        users.splice(userIndex, 1);
       }
     }
-    console.log("winCount", winCount);
+    console.log(`result after ${gamesCount} games`);
+    console.log("totalWinCount", totalWinCount);
+    console.log("totalWinAmount", ethers.utils.formatEther(totalWinAmount));
     console.log("offUsersCount", offUsersCount);
     console.log("lottery", ethers.utils.formatEther(lotteryBalance));
 
