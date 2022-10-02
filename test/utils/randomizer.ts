@@ -35,7 +35,11 @@ export async function createChainlinkRandomizer(
   );
   const randomizer: RandomizerChainlink = (await Randomizer.connect(
     user
-  ).deploy(subscriptionId, vrfMock.address)) as RandomizerChainlink;
+  ).deploy(
+    subscriptionId,
+    vrfMock.address,
+    "0x79d3d8832d904592c0bf9818b621522c988bb8b0c05cdc3b15aea1b6e8db0c15" // hardcode, any test hash
+  )) as RandomizerChainlink;
   await randomizer.deployed();
 
   async function sendRandom() {
