@@ -9,17 +9,18 @@ import "./ILottery.sol";
 contract RandomizerChainlink is VRFConsumerBaseV2, IRandomizer {
     address payable public owner;
     VRFCoordinatorV2Interface public COORDINATOR;
-    uint64 public s_subscriptionId;
-    bytes32 keyHash = 0x79d3d8832d904592c0bf9818b621522c988bb8b0c05cdc3b15aea1b6e8db0c15;
+    uint64 public subscriptionId;
+    bytes32 public keyHash;
 
     uint256[] public s_randomWords;
     uint256 public s_requestId;
 
     ILottery public lottery;
 
-    constructor(uint64 subscriptionId, address vrfCoordinator) VRFConsumerBaseV2(vrfCoordinator) {
-        COORDINATOR = VRFCoordinatorV2Interface(vrfCoordinator);
-        s_subscriptionId = subscriptionId;
+    constructor(uint64 _subscriptionId, address _vrfCoordinator, bytes32 _keyHash) VRFConsumerBaseV2(_vrfCoordinator) {
+        COORDINATOR = VRFCoordinatorV2Interface(_vrfCoordinator);
+        subscriptionId = _subscriptionId;
+        keyHash = _keyHash;
         owner = payable(msg.sender);
     }
 
@@ -60,7 +61,7 @@ contract RandomizerChainlink is VRFConsumerBaseV2, IRandomizer {
 
         s_requestId = COORDINATOR.requestRandomWords(
             keyHash,
-            s_subscriptionId,
+            subscriptionId,
             3,
             150_000,
             1

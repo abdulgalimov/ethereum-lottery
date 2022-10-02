@@ -19,6 +19,7 @@ export interface DeployData {
 export interface ChainLinkData {
   subscriptionId: number;
   vrfCoordinator: string;
+  keyHash: string;
 }
 
 export interface NetworkInfo {
@@ -35,9 +36,8 @@ export default function getInfo(): NetworkInfo {
   console.log("network", networkType);
   switch (networkType) {
     case NetworkType.localhost:
-      const baseDataPath = "../data";
       const filename = "lottery-localhost.json";
-      const LotteryInfo = require(`${baseDataPath}/${filename}`);
+      const LotteryInfo = require(`../data/${filename}`);
       return {
         type: networkType,
         filename,
@@ -64,6 +64,8 @@ export default function getInfo(): NetworkInfo {
           chainlink: {
             subscriptionId: 1933,
             vrfCoordinator: "0x2Ca8E0C643bDe4C2E08ab1fA0da3401AdAD7734D",
+            keyHash:
+              "0x79d3d8832d904592c0bf9818b621522c988bb8b0c05cdc3b15aea1b6e8db0c15",
           },
         },
       };
@@ -80,6 +82,8 @@ export default function getInfo(): NetworkInfo {
           chainlink: {
             subscriptionId: 400,
             vrfCoordinator: "0x271682DEB8C4E0901D1a1550aD2e64D568E69909",
+            keyHash:
+              "0x9fe0eebf5e446e3c998ec9bb19951541aee00bb90ea201ae456421a2ded86805",
           },
         },
       };

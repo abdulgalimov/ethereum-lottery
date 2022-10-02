@@ -47,11 +47,16 @@ async function deployChainlinkRandomizer(
   );
   const randomizer = await RandomizerFactory.deploy(
     chainlinkData.subscriptionId,
-    chainlinkData.vrfCoordinator
+    chainlinkData.vrfCoordinator,
+    chainlinkData.keyHash
   );
   await randomizer.deployed();
 
-  const args = [chainlinkData.subscriptionId, chainlinkData.vrfCoordinator];
+  const args = [
+    chainlinkData.subscriptionId,
+    chainlinkData.vrfCoordinator,
+    chainlinkData.keyHash,
+  ];
   return {
     contract: randomizer,
     argumentsCmd: `[${args.join(", ")}]`,
@@ -135,8 +140,12 @@ console.log("randomizer", randomizer);
 
 async function main() {
   const { filename, type, deployData } = networks();
-  if (type !== NetworkType.localhost && type !== NetworkType.goerli) {
-    console.log("deploy to localhost/goerli only");
+  if (
+    type !== NetworkType.localhost &&
+    type !== NetworkType.goerli &&
+    type !== NetworkType.mainnet
+  ) {
+    console.log("deploy to localhost/goerli/mainnet only");
     process.exit(1);
   }
 
