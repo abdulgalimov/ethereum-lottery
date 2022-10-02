@@ -1,0 +1,12 @@
+{
+  "script": "dist/app/app.js",
+  "name": "lottery-goerli",
+  "ignore_watch": ["temp"],
+  "out_file": "./temp/logs/out.txt",
+  "error_file": "./temp/logs/error.txt",
+  "log_date_format": "YYYY-MM-DD HH:mm:ss:SSS Z",
+  "max_memory_restart" : "4000M",
+  "env": {
+    "NETWORK": "mainnet"
+  }
+}
