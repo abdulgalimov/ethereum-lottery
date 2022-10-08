@@ -12,8 +12,7 @@ contract RandomizerChainlink is VRFConsumerBaseV2, IRandomizer {
     uint64 public subscriptionId;
     bytes32 public keyHash;
 
-    uint256[] public s_randomWords;
-    uint256 public s_requestId;
+    uint256 public requestId;
 
     ILottery public lottery;
 
@@ -46,10 +45,10 @@ contract RandomizerChainlink is VRFConsumerBaseV2, IRandomizer {
         uint256,
         uint256[] memory randomWords
     ) internal override {
-        if (s_requestId == 0) return;
-        s_randomWords = randomWords;
-        s_requestId = 0;
-        lottery.receiveRandom(randomWords[0]);
+        if (requestId != 0) {
+            requestId = 0;
+            lottery.receiveRandom(randomWords[0]);
+        }
     }
 
     function setLottery(address _lottery) external onlyOwner {
@@ -60,7 +59,7 @@ contract RandomizerChainlink is VRFConsumerBaseV2, IRandomizer {
     function getRandom() external returns(bool) {
         require(msg.sender == address(lottery), "Lottery only");
 
-        s_requestId = COORDINATOR.requestRandomWords(
+        requestId = COORDINATOR.requestRandomWords(
             keyHash,
             subscriptionId,
             3,
@@ -72,6 +71,6 @@ contract RandomizerChainlink is VRFConsumerBaseV2, IRandomizer {
 
     function resetGetNumber() external {
         require(msg.sender == address(lottery), "Lottery only");
-        s_requestId = 0;
+        requestId = 0;
     }
 }

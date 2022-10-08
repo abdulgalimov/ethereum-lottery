@@ -10,7 +10,7 @@ export interface IRandomizerInfo<T> {
   address: string;
   setLottery(address: string): Promise<any>;
   pause(isPause: boolean): void;
-  sendRandom(): Promise<any>;
+  sendRandom(requestId?: any): Promise<any>;
   destroy(): void;
 }
 
@@ -42,27 +42,22 @@ export async function createChainlinkRandomizer(
   )) as RandomizerChainlink;
   await randomizer.deployed();
 
-  async function sendRandom() {
-    const requestId = await randomizer.s_requestId();
-    return vrfMock.fulfillRandomWords(requestId, randomizer.address);
-  }
-
   let wait: boolean;
-  async function onInterval() {
-    if (wait) return;
+  async function sendRandom(forceRequestId?: any) {
+    if (wait) return false;
 
-    const requestId = await randomizer.s_requestId();
+    const requestId = forceRequestId || (await randomizer.requestId());
     if (requestId.toNumber()) {
       wait = true;
-      const tx = await vrfMock.fulfillRandomWords(
-        requestId,
-        randomizer.address
-      );
-      await tx.wait();
+
+      await (
+        await vrfMock.fulfillRandomWords(requestId, randomizer.address)
+      ).wait();
+
       wait = false;
     }
   }
-  let intervalId = setInterval(onInterval, 1000);
+  let intervalId = setInterval(sendRandom, 1000);
 
   return {
     contract: randomizer,
@@ -75,7 +70,7 @@ export async function createChainlinkRandomizer(
       if (isPause) {
         clearInterval(intervalId);
       } else {
-        intervalId = setInterval(onInterval, 1000);
+        intervalId = setInterval(sendRandom, 1000);
       }
     },
     destroy() {

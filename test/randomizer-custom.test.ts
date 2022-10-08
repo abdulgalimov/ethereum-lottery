@@ -2,8 +2,9 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { RandomizerCustomTest } from "../typechain-types";
-import { createLottery } from "./utils/utils";
+import { createLottery, skipTime } from "./utils/utils";
 import { createTestRandomizer, IRandomizerInfo } from "./utils/randomizer";
+import { lotteryOnlyMessage } from "./utils/constants";
 
 describe("RandomizerCustom", () => {
   let signers: SignerWithAddress[];
@@ -40,7 +41,7 @@ describe("RandomizerCustom", () => {
 
   it("get random fail", async () => {
     await expect(randomizerCustom.contract.getRandom()).revertedWith(
-      "Lottery only"
+      lotteryOnlyMessage
     );
   });
 
@@ -87,5 +88,25 @@ describe("RandomizerCustom", () => {
       [owner, randomizerCustom.contract],
       [100, -100]
     );
+  });
+
+  it("resetGetNumber", async () => {
+    const lottery = await createLottery(randomizerCustom.address);
+    await (await randomizerCustom.setLottery(lottery.address)).wait();
+
+    randomizerCustom.pause(true);
+
+    await (await lottery.addBalance({ value: 1000 })).wait();
+    await (await lottery.attempt({ value: 1000 })).wait();
+
+    await skipTime(3600);
+
+    await (await lottery.revertFailAttempt()).wait();
+  });
+
+  it("resetGetNumber fail", async () => {
+    await expect(
+      randomizerCustom.contract.connect(owner).resetGetNumber()
+    ).to.revertedWith(lotteryOnlyMessage);
   });
 });
