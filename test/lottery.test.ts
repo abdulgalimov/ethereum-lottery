@@ -2,8 +2,13 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber } from "ethers";
+import hre from "hardhat";
 import { LotteryTest, RandomizerChainlink } from "../typechain-types";
-import { createChainlinkRandomizer, IRandomizerInfo } from "./utils/randomizer";
+import {
+  createChainlinkRandomizer,
+  createTestRandomizer,
+  IRandomizerInfo,
+} from "./utils/randomizer";
 import {
   createSettings,
   defaultBalance,
@@ -12,8 +17,10 @@ import {
   expectBalanceChange,
   expectEvent,
   getMinValue,
+  skipTime,
   toWei,
   UpdateSettings,
+  wait,
 } from "./utils/utils";
 import { onlyOwnerMessage } from "./utils/constants";
 import { Settings } from "../app/types";
@@ -435,6 +442,36 @@ describe("Lottery", function () {
 
     expect(await lottery.totalCount()).to.eq(0);
     expect(await lottery.getBalance()).to.eq(remainderValue);
+  });
+
+  it("revert failed", async () => {
+    randomizer.pause(true);
+
+    await _addBalance(true, 1000);
+
+    const user = getUser();
+    const gameValue = 100;
+    await _attempt(true, gameValue, user);
+
+    await skipTime(2600);
+
+    await expect(lottery.revertFailAttempt()).to.revertedWith("wait timeout");
+
+    await skipTime(1000);
+
+    await expect(lottery.revertFailAttempt()).to.changeEtherBalances(
+      [user.address, lottery.address],
+      [gameValue, -gameValue]
+    );
+
+    await expect(lottery.revertFailAttempt()).to.revertedWith(
+      "no current value"
+    );
+
+    expect(await lottery.currentValue()).to.eq(0);
+    expect(await lottery.currentSender()).to.eq(
+      "0x0000000000000000000000000000000000000000"
+    );
   });
 });
 

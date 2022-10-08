@@ -24,6 +24,7 @@ contract Lottery {
 
     address public currentSender;
     uint public currentValue;
+    uint public currentTime;
 
     constructor(Settings memory s) {
         isContract(address(s.randomizer));
@@ -91,6 +92,19 @@ contract Lottery {
         attempt();
     }
 
+    function revertFailAttempt() public onlyOwner {
+        require(block.timestamp - currentTime > 1 hours, "wait timeout");
+        require(currentValue > 0, "no current value");
+
+        settings.randomizer.resetGetNumber();
+
+        address payable sender = payable(currentSender);
+        sender.transfer(currentValue);
+        currentValue = 0;
+        currentSender = address(0);
+        currentTime = 0;
+    }
+
     function attempt() public payable {
         require(currentValue == 0, "draw in progress");
         require(msg.value > 0, "no zero money");
@@ -105,6 +119,7 @@ contract Lottery {
         totalCount++;
         currentSender = msg.sender;
         currentValue = msg.value;
+        currentTime = block.timestamp;
         emit TryStart(currentValue, totalCount, totalBalance);
     }
 

@@ -106,3 +106,8 @@ export async function createLottery(
   await lottery.deployed();
   return lottery;
 }
+
+export async function skipTime(time: number) {
+  await ethers.provider.send("evm_increaseTime", [time]);
+  await ethers.provider.send("evm_mine", []);
+}

@@ -48,4 +48,9 @@ contract RandomizerCustom is Ownable, IRandomizer {
             needRandom = false;
         }
     }
+
+    function resetGetNumber() external {
+        require(msg.sender == address(lottery), "Lottery only");
+        needRandom = false;
+    }
 }
