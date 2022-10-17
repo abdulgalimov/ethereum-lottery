@@ -8,9 +8,9 @@ import { createSettings } from "../test/utils/utils";
 import { IRandomizer, RandomizerCustom } from "../typechain-types";
 
 const dataDir = "data";
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir);
-}
+const historyDir = `${dataDir}/history`;
+if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir);
+if (!fs.existsSync(historyDir)) fs.mkdirSync(historyDir);
 
 interface DeployInfo {
   contract: BaseContract;
@@ -89,6 +89,21 @@ async function deployLottery(
   };
 }
 
+function saveCurrentToHistory() {
+  const { type, filename } = networks();
+
+  const fullPath = path.resolve(dataDir, filename);
+  if (!fs.existsSync(fullPath)) return;
+
+  const fullTargetPath = `${historyDir}/${type}`;
+  if (!fs.existsSync(fullTargetPath)) fs.mkdirSync(fullTargetPath);
+
+  const data = require(fullPath);
+  const ctime = data.ctime || 0;
+  const targetPath = `${fullTargetPath}/${ctime}.json`;
+  fs.copyFileSync(fullPath, targetPath);
+}
+
 function saveOut(
   owner: SignerWithAddress,
   lottery: DeployInfo,
@@ -96,7 +111,10 @@ function saveOut(
   randomizerChainlink: DeployInfo | null,
   filename: string
 ) {
+  saveCurrentToHistory();
+
   const saveData = {
+    ctime: Math.floor(Date.now() / 1000),
     owner: owner.address,
     hardhatPrivateKey:
       "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",

@@ -2,13 +2,8 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber } from "ethers";
-import hre from "hardhat";
 import { LotteryTest, RandomizerChainlink } from "../typechain-types";
-import {
-  createChainlinkRandomizer,
-  createTestRandomizer,
-  IRandomizerInfo,
-} from "./utils/randomizer";
+import { createChainlinkRandomizer, IRandomizerInfo } from "./utils/randomizer";
 import {
   createSettings,
   defaultBalance,
@@ -20,7 +15,6 @@ import {
   skipTime,
   toWei,
   UpdateSettings,
-  wait,
 } from "./utils/utils";
 import { onlyOwnerMessage } from "./utils/constants";
 import { Settings } from "../app/types";
