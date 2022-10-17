@@ -99,8 +99,12 @@ describe("Lottery", function () {
   }
 
   async function _readEvent(name: string): Promise<any> {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
+      const id = setTimeout(() => {
+        reject(new Error(`long wait for an event: ${name}`));
+      }, 10_000);
       lottery.once(name, function () {
+        clearTimeout(id);
         resolve(arguments[arguments.length - 1]);
       });
     });
