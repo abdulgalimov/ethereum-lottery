@@ -107,7 +107,7 @@ function saveCurrentToHistory() {
 function saveOut(
   owner: SignerWithAddress,
   lottery: DeployInfo,
-  randomizerCustom: DeployInfo,
+  randomizerCustom: DeployInfo | null,
   randomizerChainlink: DeployInfo | null,
   filename: string
 ) {
@@ -123,11 +123,13 @@ function saveOut(
       argumentsCmd: lottery.argumentsCmd,
       argumentsCode: lottery.argumentsCode,
     },
-    randomizerCustom: {
-      address: randomizerCustom.contract.address,
-      argumentsCmd: randomizerCustom.argumentsCmd,
-      argumentsCode: randomizerCustom.argumentsCode,
-    },
+    randomizerCustom: randomizerCustom
+      ? {
+          address: randomizerCustom.contract.address,
+          argumentsCmd: randomizerCustom.argumentsCmd,
+          argumentsCode: randomizerCustom.argumentsCode,
+        }
+      : null,
     randomizerChainlink: randomizerChainlink
       ? {
           address: randomizerChainlink.contract.address,
@@ -170,15 +172,15 @@ async function main() {
   const [owner] = await ethers.getSigners();
   const isLocalhost = type === NetworkType.localhost;
 
-  const randomizerChainlink = !isLocalhost
-    ? await deployChainlinkRandomizer(owner, deployData.chainlink)
-    : null;
-  //
-  const randomizerCustom = await deployCustomRandomizer(owner);
+  let randomizerChainlink = null;
+  let randomizerCustom = null;
 
   let currentRandomizer: DeployInfo;
   switch (randomizer) {
     case Randomizers.CHAINLINK:
+      randomizerChainlink = !isLocalhost
+        ? await deployChainlinkRandomizer(owner, deployData.chainlink)
+        : null;
       if (!randomizerChainlink) {
         throw new Error("Invalid randomizerChainlink");
       }
@@ -186,6 +188,7 @@ async function main() {
       break;
     case Randomizers.CUSTOM:
     default:
+      randomizerCustom = await deployCustomRandomizer(owner);
       currentRandomizer = randomizerCustom;
       break;
   }

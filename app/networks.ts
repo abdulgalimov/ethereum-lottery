@@ -83,7 +83,7 @@ export default function getInfo(): NetworkInfo {
             subscriptionId: 400,
             vrfCoordinator: "0x271682DEB8C4E0901D1a1550aD2e64D568E69909",
             keyHash:
-              "0x9fe0eebf5e446e3c998ec9bb19951541aee00bb90ea201ae456421a2ded86805",
+              "0x8af398995b04c28e9951adb9721ef74c74f93e6a478f39e7e0777be13527e7ef",
           },
         },
       };
